@@ -14,16 +14,130 @@ namespace ManyCopy
         [STAThread]
         static void Main()
         {
-            // Keep WinForms defaults, but ensure good DPI behavior
+            // Classic WinForms init (no ApplicationConfiguration)
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
-            ApplicationConfiguration.Initialize();
-            Application.Run(new MainForm());
+
+            using (var splash = new SplashForm())
+            {
+                splash.Show();
+                Application.DoEvents(); // let splash paint
+
+                var minSplash = TimeSpan.FromMilliseconds(2000);
+                var sw = System.Diagnostics.Stopwatch.StartNew();
+
+                var main = new MainForm();
+
+                // Keep splash up until the minimum time has elapsed
+                while (sw.Elapsed < minSplash)
+                {
+                    Application.DoEvents();                 // keep UI responsive
+                    System.Threading.Thread.Sleep(15);      // tiny nap
+                }
+
+                splash.Close();
+                Application.Run(main);
+            }
         }
     }
 
-    // =================== Theme Engine ===================
+    // ========= Splash (loads Assets/splash.* if present; otherwise minimal fallback) =========
+    public sealed class SplashForm : Form
+    {
+        private Image? _bg;
+
+        public SplashForm()
+        {
+            FormBorderStyle = FormBorderStyle.None;
+            StartPosition = FormStartPosition.CenterScreen;
+            TopMost = true;
+            ShowInTaskbar = false;
+            DoubleBuffered = true;
+
+            Width = 520;
+            Height = 260;
+            // Use the same exe icon for splash window
+            try { this.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { }
+
+            TryLoadSplashImage();
+
+            if (_bg != null)
+            {
+                BackgroundImage = _bg;
+                BackgroundImageLayout = ImageLayout.Stretch;
+                BackColor = Color.Black;
+            }
+            else
+            {
+                BackColor = Color.FromArgb(32, 32, 32);
+                Controls.Add(new Label
+                {
+                    Text = "ManyCopy",
+                    ForeColor = Color.White,
+                    Font = new Font("Segoe UI Semibold", 26f, FontStyle.Bold),
+                    AutoSize = true,
+                    BackColor = Color.Transparent,
+                    Left = 28,
+                    Top = 38
+                });
+            }
+
+            Controls.Add(new Label
+            {
+                Text = "v1.1.4",
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 11f),
+                AutoSize = true,
+                BackColor = Color.Transparent,
+                Left = 28,
+                Top = Height - 72
+            });
+
+            Controls.Add(new ProgressBar
+            {
+                Style = ProgressBarStyle.Marquee,
+                MarqueeAnimationSpeed = 30,
+                Width = Width - 56,
+                Height = 14,
+                Left = 28,
+                Top = Height - 42
+            });
+        }
+
+        private void TryLoadSplashImage()
+        {
+            try
+            {
+                var asm = typeof(SplashForm).Assembly;
+                var res = asm.GetManifestResourceNames()
+                             .FirstOrDefault(n => n.EndsWith("splash.png", StringComparison.OrdinalIgnoreCase)
+                                               || n.EndsWith("splash.jpg", StringComparison.OrdinalIgnoreCase)
+                                               || n.EndsWith("splash.webp", StringComparison.OrdinalIgnoreCase));
+                if (res != null)
+                {
+                    using var s = asm.GetManifestResourceStream(res);
+                    if (s != null) { _bg = Image.FromStream(s); return; }
+                }
+
+                var assets = Path.Combine(AppContext.BaseDirectory, "Assets");
+                foreach (var name in new[] { "splash.png", "splash.jpg", "splash.webp", "Splash.png", "Splash.jpg", "Splash.webp" })
+                {
+                    var p = Path.Combine(assets, name);
+                    if (File.Exists(p)) { _bg = Image.FromFile(p); return; }
+                }
+            }
+            catch { }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing) _bg?.Dispose();
+            base.Dispose(disposing);
+        }
+    }
+
+    // =================== Theme ===================
     public enum ThemeMode { Light, Dark, Auto }
 
     public static class Theme
@@ -58,7 +172,7 @@ namespace ManyCopy
         {
             try
             {
-                var key = Registry.CurrentUser.OpenSubKey(
+                using var key = Registry.CurrentUser.OpenSubKey(
                     @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize");
                 if (key?.GetValue("AppsUseLightTheme") is int v)
                     return v == 0 ? ThemeMode.Dark : ThemeMode.Light;
@@ -194,7 +308,7 @@ namespace ManyCopy
         }
     }
 
-    // =================== Main App UI ===================
+    // =================== Main UI (absolute layout; anchors for scaling) ===================
     public class MainForm : Form
     {
         private ComboBox cmbTheme = null!;
@@ -240,14 +354,15 @@ namespace ManyCopy
 
         public MainForm()
         {
-            Text = "ManyCopy v1.1.3 — Copy Files to Many Folders";
+            Text = $"ManyCopy v1.1.4 — Copy Files to Many Folders";
+            // Use the executable's icon for the window and taskbar
+            try { this.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { }
             Width = 1000;
             Height = 880;
             MinimumSize = new Size(900, 760);
             StartPosition = FormStartPosition.CenterScreen;
             KeyPreview = true;
 
-            // DPI-aware scaling without changing initial layout
             AutoScaleMode = AutoScaleMode.Dpi;
             AutoScaleDimensions = new SizeF(96f, 96f);
             Font = new Font("Segoe UI", 9f);
@@ -255,17 +370,12 @@ namespace ManyCopy
 
             KeyDown += MainForm_KeyDown;
 
-            // Theme controls (top-right)
+            // Theme controls
             cmbTheme = new ComboBox { Left = 820, Top = 12, Width = 155, DropDownStyle = ComboBoxStyle.DropDownList, Anchor = AnchorStyles.Top | AnchorStyles.Right };
             cmbTheme.Items.AddRange(new object[] { "Auto (Windows)", "Light", "Dark" });
             cmbTheme.SelectedIndexChanged += (_, __) =>
             {
-                var mode = cmbTheme.SelectedIndex switch
-                {
-                    1 => ThemeMode.Light,
-                    2 => ThemeMode.Dark,
-                    _ => ThemeMode.Auto
-                };
+                var mode = cmbTheme.SelectedIndex switch { 1 => ThemeMode.Light, 2 => ThemeMode.Dark, _ => ThemeMode.Auto };
                 Theme.ApplyTo(this, mode);
                 SaveTheme(mode);
             };
@@ -274,17 +384,12 @@ namespace ManyCopy
             btnRefreshTheme = new Button { Text = "Refresh Theme", Left = 700, Top = 11, Width = 110, Height = 24, Anchor = AnchorStyles.Top | AnchorStyles.Right };
             btnRefreshTheme.Click += (_, __) =>
             {
-                var mode = cmbTheme.SelectedIndex switch
-                {
-                    1 => ThemeMode.Light,
-                    2 => ThemeMode.Dark,
-                    _ => ThemeMode.Auto
-                };
+                var mode = cmbTheme.SelectedIndex switch { 1 => ThemeMode.Light, 2 => ThemeMode.Dark, _ => ThemeMode.Auto };
                 Theme.ApplyTo(this, mode);
             };
             Controls.Add(btnRefreshTheme);
 
-            // Source
+            // Source row
             var lblSource = new Label { Text = "Source file:", Left = 10, Top = 50, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
             txtSource = new TextBox { Left = 95, Top = 47, Width = 780, AllowDrop = true, Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right };
             btnBrowseSource = new Button { Text = "Browse…", Left = 885, Top = 46, Width = 90, Anchor = AnchorStyles.Top | AnchorStyles.Right };
@@ -310,15 +415,15 @@ namespace ManyCopy
 
             grpRange = new GroupBox { Text = "Range Helper", Left = 10, Top = 105, Width = 965, Height = 120, Visible = false, Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right };
             var lblRoot = new Label { Text = "Root:", Left = 10, Top = 25, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
-            txtRoot = new TextBox { Left = 60, Top = 22, Width = 800, Text = "", Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right };
+            txtRoot = new TextBox { Left = 60, Top = 22, Width = 800, Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right };
             btnBrowseRoot = new Button { Text = "Browse…", Left = 870, Top = 21, Width = 85, Anchor = AnchorStyles.Top | AnchorStyles.Right };
             btnBrowseRoot.Click += (_, __) => PickRoot();
             var lblRangePrefix = new Label { Text = "Prefix:", Left = 10, Top = 60, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
-            txtRangePrefix = new TextBox { Left = 60, Top = 57, Width = 150, Text = "", Anchor = AnchorStyles.Top | AnchorStyles.Left };
+            txtRangePrefix = new TextBox { Left = 60, Top = 57, Width = 150, Anchor = AnchorStyles.Top | AnchorStyles.Left };
             var lblStart = new Label { Text = "Start #:", Left = 230, Top = 60, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
-            txtStart = new TextBox { Left = 285, Top = 57, Width = 80, Text = "", Anchor = AnchorStyles.Top | AnchorStyles.Left };
+            txtStart = new TextBox { Left = 285, Top = 57, Width = 80, Anchor = AnchorStyles.Top | AnchorStyles.Left };
             var lblEnd = new Label { Text = "End #:", Left = 380, Top = 60, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
-            txtEnd = new TextBox { Left = 430, Top = 57, Width = 80, Text = "", Anchor = AnchorStyles.Top | AnchorStyles.Left };
+            txtEnd = new TextBox { Left = 430, Top = 57, Width = 80, Anchor = AnchorStyles.Top | AnchorStyles.Left };
             chkCreateMissing = new CheckBox { Text = "Create missing folders", Left = 530, Top = 59, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
             btnAddRange = new Button { Text = "Add Range →", Left = 760, Top = 56, Width = 195, Anchor = AnchorStyles.Top | AnchorStyles.Right };
             btnAddRange.Click += (_, __) => AddRangeToList();
@@ -372,7 +477,7 @@ namespace ManyCopy
             chkOverwrite = new CheckBox { Text = "Overwrite if exists", Left = 10, Top = 670, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
 
             chkUsePrefix = new CheckBox { Text = "Fixed prefix", Left = 160, Top = 670, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
-            txtPrefix = new TextBox { Left = 255, Top = 667, Width = 140, Enabled = false, Text = "", Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            txtPrefix = new TextBox { Left = 255, Top = 667, Width = 140, Enabled = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
             chkUsePrefix.CheckedChanged += (_, __) =>
             {
                 txtPrefix.Enabled = chkUsePrefix.Checked;
@@ -384,7 +489,7 @@ namespace ManyCopy
             };
 
             chkUsePrefixRange = new CheckBox { Text = "Numbered prefix", Left = 405, Top = 670, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
-            txtPrefixBase = new TextBox { Left = 530, Top = 667, Width = 100, Enabled = false, Text = "", Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            txtPrefixBase = new TextBox { Left = 530, Top = 667, Width = 100, Enabled = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
             var lblStartNum = new Label { Text = "Start:", Left = 635, Top = 670, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
             nudPrefixStart = new NumericUpDown { Left = 675, Top = 667, Width = 70, Minimum = 0, Maximum = 1_000_000, Value = 1, Enabled = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
             chkUsePrefixRange.CheckedChanged += (_, __) =>
@@ -395,7 +500,7 @@ namespace ManyCopy
             };
 
             chkUseSuffix = new CheckBox { Text = "Suffix", Left = 760, Top = 670, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
-            txtSuffix = new TextBox { Left = 820, Top = 667, Width = 160, Enabled = false, Text = "", Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right };
+            txtSuffix = new TextBox { Left = 820, Top = 667, Width = 160, Enabled = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right };
             chkUseSuffix.CheckedChanged += (_, __) => txtSuffix.Enabled = chkUseSuffix.Checked;
 
             chkPreview = new CheckBox { Text = "Preview mode", Left = 10, Top = 700, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
@@ -407,7 +512,7 @@ namespace ManyCopy
                 chkUseSuffix, txtSuffix, chkPreview
             });
 
-            // Actions + log (stick to bottom)
+            // Actions + log
             btnUndo = new Button { Text = "Undo", Left = 610, Top = 696, Width = 90, Height = 32, Enabled = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Right };
             btnUndo.Click += (_, __) => DoUndo();
 
@@ -433,7 +538,7 @@ namespace ManyCopy
 
             Controls.AddRange(new Control[] { btnUndo, btnRedo, btnEngage, lblStatus, logBox });
 
-            // Load/apply theme
+            // Theme on load
             var saved = LoadTheme();
             cmbTheme.SelectedIndex = saved switch { ThemeMode.Light => 1, ThemeMode.Dark => 2, _ => 0 };
             Theme.ApplyTo(this, saved);
@@ -568,8 +673,7 @@ namespace ManyCopy
                 if (!Directory.Exists(p.folder))
                 {
                     Log($"Skipped -> {p.folder} (folder missing)");
-                    skipped++;
-                    continue;
+                    skipped++; continue;
                 }
 
                 var rec = new CopyRecord { Destination = p.destFile };
@@ -587,8 +691,7 @@ namespace ManyCopy
                         else
                         {
                             Log($"Skipped -> {p.folder} (exists, overwrite off)");
-                            skipped++;
-                            continue;
+                            skipped++; continue;
                         }
                     }
 
@@ -606,11 +709,7 @@ namespace ManyCopy
                 }
             }
 
-            if (entry.Ops.Count > 0)
-            {
-                PushUndo(entry);
-                _redo.Clear();
-            }
+            if (entry.Ops.Count > 0) { PushUndo(entry); _redo.Clear(); }
 
             Log($"Done. Copied: {copied}, Skipped: {skipped}, Failed: {failed}. Backups created: {backedUp}.");
             if (chkOverwrite.Checked && backedUp > 0)
@@ -632,7 +731,7 @@ namespace ManyCopy
             string nameNoExt = Path.GetFileNameWithoutExtension(baseName);
             string ext = Path.GetExtension(baseName);
             string suffixPart = useSuffix ? (suffix ?? "").Trim() : "";
-            if (!string.IsNullOrEmpty(suffixPart)) nameNoExt = nameNoExt + suffixPart;
+            if (!string.IsNullOrEmpty(suffixPart)) nameNoExt += suffixPart;
 
             return prefixPart + nameNoExt + ext;
         }
@@ -769,7 +868,7 @@ namespace ManyCopy
         public List<CopyRecord> Ops { get; set; } = new();
     }
 
-    // ==================== Explorer multi-folder picker (coclass-based, corrected GUIDs) ====================
+    // ================= Explorer multi-folder picker (COM coclass) =================
     internal static class ShellFolderPicker
     {
         public static string[]? PickMultiple(IWin32Window owner)
@@ -909,14 +1008,5 @@ namespace ManyCopy
         private enum SIGDN : uint { SIGDN_FILESYSPATH = 0x80058000 }
         [StructLayout(LayoutKind.Sequential, Pack = 4)] private struct PROPERTYKEY { public Guid fmtid; public uint pid; }
         [Flags] private enum SIATTRIBFLAGS { SIATTRIBFLAGS_AND = 1, SIATTRIBFLAGS_OR = 2, SIATTRIBFLAGS_APPCOMPAT = 3 }
-    }
-
-    internal static class UiExt
-    {
-        public static void ToolTip(this Control ctrl, string text)
-        {
-            var tip = new ToolTip { AutomaticDelay = 300, AutoPopDelay = 8000, InitialDelay = 300, ReshowDelay = 100 };
-            tip.SetToolTip(ctrl, text);
-        }
     }
 }
