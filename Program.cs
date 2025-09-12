@@ -24,7 +24,17 @@ namespace ManyCopy
                 splash.Show();
                 Application.DoEvents(); // let splash paint
 
+                var minSplash = TimeSpan.FromMilliseconds(2000);
+                var sw = System.Diagnostics.Stopwatch.StartNew();
+
                 var main = new MainForm();
+
+                // Keep splash up until the minimum time has elapsed
+                while (sw.Elapsed < minSplash)
+                {
+                    Application.DoEvents();                 // keep UI responsive
+                    System.Threading.Thread.Sleep(15);      // tiny nap
+                }
 
                 splash.Close();
                 Application.Run(main);
@@ -73,7 +83,7 @@ namespace ManyCopy
 
             Controls.Add(new Label
             {
-                Text = $"v{Application.ProductVersion}",
+                Text = "v1.1.4",
                 ForeColor = Color.White,
                 Font = new Font("Segoe UI", 11f),
                 AutoSize = true,
@@ -342,7 +352,7 @@ namespace ManyCopy
 
         public MainForm()
         {
-            Text = $"ManyCopy v{Application.ProductVersion} — Copy Files to Many Folders";
+            Text = $"ManyCopy v1.1.4 — Copy Files to Many Folders";
             Width = 1000;
             Height = 880;
             MinimumSize = new Size(900, 760);
