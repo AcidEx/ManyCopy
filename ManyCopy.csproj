@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows10.0.19041</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <PlatformTarget>x64</PlatformTarget>
+    <Prefer32Bit>false</Prefer32Bit>
+    <AssemblyName>ManyCopy</AssemblyName>
+    <RootNamespace>ManyCopy</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationIcon>Assets\ManyCopy.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Assets\Splash.png">
+      <LogicalName>ManyCopy.Assets.Splash.png</LogicalName>
+    </EmbeddedResource>
+    <None Include="Assets\ManyCopy.ico" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Release'">
+    <Optimize>true</Optimize>
+    <DebugType>portable</DebugType>
+  </PropertyGroup>
+  
+  <PropertyGroup>
+  <AssemblyVersion>1.1.2.0</AssemblyVersion>
+  <FileVersion>1.1.2.0</FileVersion>
+  <Version>1.1.2</Version>
+</PropertyGroup>
+
+</Project>
