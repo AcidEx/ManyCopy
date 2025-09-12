@@ -14,6 +14,10 @@ namespace ManyCopy
         [STAThread]
         static void Main()
         {
+            // Keep WinForms defaults, but ensure good DPI behavior
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+            Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
             ApplicationConfiguration.Initialize();
             Application.Run(new MainForm());
         }
@@ -236,15 +240,23 @@ namespace ManyCopy
 
         public MainForm()
         {
-            Text = "ManyCopy v1.1.2 — Copy Files to Many Folders";
+            Text = "ManyCopy v1.1.3 — Copy Files to Many Folders";
             Width = 1000;
             Height = 880;
+            MinimumSize = new Size(900, 760);
             StartPosition = FormStartPosition.CenterScreen;
             KeyPreview = true;
+
+            // DPI-aware scaling without changing initial layout
+            AutoScaleMode = AutoScaleMode.Dpi;
+            AutoScaleDimensions = new SizeF(96f, 96f);
+            Font = new Font("Segoe UI", 9f);
+            DoubleBuffered = true;
+
             KeyDown += MainForm_KeyDown;
 
-            // Theme controls
-            cmbTheme = new ComboBox { Left = 820, Top = 12, Width = 155, DropDownStyle = ComboBoxStyle.DropDownList };
+            // Theme controls (top-right)
+            cmbTheme = new ComboBox { Left = 820, Top = 12, Width = 155, DropDownStyle = ComboBoxStyle.DropDownList, Anchor = AnchorStyles.Top | AnchorStyles.Right };
             cmbTheme.Items.AddRange(new object[] { "Auto (Windows)", "Light", "Dark" });
             cmbTheme.SelectedIndexChanged += (_, __) =>
             {
@@ -259,7 +271,7 @@ namespace ManyCopy
             };
             Controls.Add(cmbTheme);
 
-            btnRefreshTheme = new Button { Text = "Refresh Theme", Left = 700, Top = 11, Width = 110, Height = 24 };
+            btnRefreshTheme = new Button { Text = "Refresh Theme", Left = 700, Top = 11, Width = 110, Height = 24, Anchor = AnchorStyles.Top | AnchorStyles.Right };
             btnRefreshTheme.Click += (_, __) =>
             {
                 var mode = cmbTheme.SelectedIndex switch
@@ -273,9 +285,9 @@ namespace ManyCopy
             Controls.Add(btnRefreshTheme);
 
             // Source
-            var lblSource = new Label { Text = "Source file:", Left = 10, Top = 50, AutoSize = true };
-            txtSource = new TextBox { Left = 95, Top = 47, Width = 780, AllowDrop = true };
-            btnBrowseSource = new Button { Text = "Browse…", Left = 885, Top = 46, Width = 90 };
+            var lblSource = new Label { Text = "Source file:", Left = 10, Top = 50, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
+            txtSource = new TextBox { Left = 95, Top = 47, Width = 780, AllowDrop = true, Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right };
+            btnBrowseSource = new Button { Text = "Browse…", Left = 885, Top = 46, Width = 90, Anchor = AnchorStyles.Top | AnchorStyles.Right };
             btnBrowseSource.Click += (_, __) => PickSource();
             txtSource.DragEnter += (s, e) =>
             {
@@ -290,26 +302,25 @@ namespace ManyCopy
                     paths.Length == 1 && File.Exists(paths[0]))
                     txtSource.Text = paths[0];
             };
-
             Controls.AddRange(new Control[] { lblSource, txtSource, btnBrowseSource });
 
             // Range Helper
-            chkEnableRange = new CheckBox { Text = "Enable Range Helper", Left = 10, Top = 80, AutoSize = true };
+            chkEnableRange = new CheckBox { Text = "Enable Range Helper", Left = 10, Top = 80, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
             chkEnableRange.CheckedChanged += (_, __) => grpRange.Visible = chkEnableRange.Checked;
 
-            grpRange = new GroupBox { Text = "Range Helper", Left = 10, Top = 105, Width = 965, Height = 120, Visible = false };
-            var lblRoot = new Label { Text = "Root:", Left = 10, Top = 25, AutoSize = true };
-            txtRoot = new TextBox { Left = 60, Top = 22, Width = 800, Text = "" };
-            btnBrowseRoot = new Button { Text = "Browse…", Left = 870, Top = 21, Width = 85 };
+            grpRange = new GroupBox { Text = "Range Helper", Left = 10, Top = 105, Width = 965, Height = 120, Visible = false, Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right };
+            var lblRoot = new Label { Text = "Root:", Left = 10, Top = 25, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
+            txtRoot = new TextBox { Left = 60, Top = 22, Width = 800, Text = "", Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right };
+            btnBrowseRoot = new Button { Text = "Browse…", Left = 870, Top = 21, Width = 85, Anchor = AnchorStyles.Top | AnchorStyles.Right };
             btnBrowseRoot.Click += (_, __) => PickRoot();
-            var lblRangePrefix = new Label { Text = "Prefix:", Left = 10, Top = 60, AutoSize = true };
-            txtRangePrefix = new TextBox { Left = 60, Top = 57, Width = 150, Text = "" };
-            var lblStart = new Label { Text = "Start #:", Left = 230, Top = 60, AutoSize = true };
-            txtStart = new TextBox { Left = 285, Top = 57, Width = 80, Text = "" };
-            var lblEnd = new Label { Text = "End #:", Left = 380, Top = 60, AutoSize = true };
-            txtEnd = new TextBox { Left = 430, Top = 57, Width = 80, Text = "" };
-            chkCreateMissing = new CheckBox { Text = "Create missing folders", Left = 530, Top = 59, AutoSize = true };
-            btnAddRange = new Button { Text = "Add Range →", Left = 760, Top = 56, Width = 195 };
+            var lblRangePrefix = new Label { Text = "Prefix:", Left = 10, Top = 60, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
+            txtRangePrefix = new TextBox { Left = 60, Top = 57, Width = 150, Text = "", Anchor = AnchorStyles.Top | AnchorStyles.Left };
+            var lblStart = new Label { Text = "Start #:", Left = 230, Top = 60, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
+            txtStart = new TextBox { Left = 285, Top = 57, Width = 80, Text = "", Anchor = AnchorStyles.Top | AnchorStyles.Left };
+            var lblEnd = new Label { Text = "End #:", Left = 380, Top = 60, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
+            txtEnd = new TextBox { Left = 430, Top = 57, Width = 80, Text = "", Anchor = AnchorStyles.Top | AnchorStyles.Left };
+            chkCreateMissing = new CheckBox { Text = "Create missing folders", Left = 530, Top = 59, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
+            btnAddRange = new Button { Text = "Add Range →", Left = 760, Top = 56, Width = 195, Anchor = AnchorStyles.Top | AnchorStyles.Right };
             btnAddRange.Click += (_, __) => AddRangeToList();
 
             grpRange.Controls.AddRange(new Control[]
@@ -322,12 +333,16 @@ namespace ManyCopy
             Controls.Add(grpRange);
 
             // Destinations
-            var lblDest = new Label { Text = "Destination folders:", Left = 10, Top = 235, AutoSize = true };
+            var lblDest = new Label { Text = "Destination folders:", Left = 10, Top = 235, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
             listDest = new ListBox
             {
-                Left = 10, Top = 255, Width = 860, Height = 400,
+                Left = 10,
+                Top = 255,
+                Width = 860,
+                Height = 400,
                 SelectionMode = SelectionMode.MultiExtended,
-                AllowDrop = true
+                AllowDrop = true,
+                Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right
             };
             listDest.DragEnter += (s, e) =>
             {
@@ -342,22 +357,22 @@ namespace ManyCopy
                     foreach (var p in paths.Where(Directory.Exists)) AddDestPath(p);
             };
 
-            btnBrowseDest = new Button { Text = "Browse…", Left = 885, Top = 255, Width = 90 };
+            btnBrowseDest = new Button { Text = "Browse…", Left = 885, Top = 255, Width = 90, Anchor = AnchorStyles.Top | AnchorStyles.Right };
             btnBrowseDest.Click += (_, __) => AddMultipleFolders();
 
-            btnRemoveSel = new Button { Text = "Remove", Left = 885, Top = 290, Width = 90 };
+            btnRemoveSel = new Button { Text = "Remove", Left = 885, Top = 290, Width = 90, Anchor = AnchorStyles.Top | AnchorStyles.Right };
             btnRemoveSel.Click += (_, __) => RemoveSelected();
 
-            btnClear = new Button { Text = "Clear All", Left = 885, Top = 325, Width = 90 };
+            btnClear = new Button { Text = "Clear All", Left = 885, Top = 325, Width = 90, Anchor = AnchorStyles.Top | AnchorStyles.Right };
             btnClear.Click += (_, __) => listDest.Items.Clear();
 
             Controls.AddRange(new Control[] { lblDest, listDest, btnBrowseDest, btnRemoveSel, btnClear });
 
             // Options
-            chkOverwrite = new CheckBox { Text = "Overwrite if exists", Left = 10, Top = 670, AutoSize = true };
+            chkOverwrite = new CheckBox { Text = "Overwrite if exists", Left = 10, Top = 670, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
 
-            chkUsePrefix = new CheckBox { Text = "Fixed prefix", Left = 160, Top = 670, AutoSize = true };
-            txtPrefix = new TextBox { Left = 255, Top = 667, Width = 140, Enabled = false, Text = "" };
+            chkUsePrefix = new CheckBox { Text = "Fixed prefix", Left = 160, Top = 670, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            txtPrefix = new TextBox { Left = 255, Top = 667, Width = 140, Enabled = false, Text = "", Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
             chkUsePrefix.CheckedChanged += (_, __) =>
             {
                 txtPrefix.Enabled = chkUsePrefix.Checked;
@@ -368,10 +383,10 @@ namespace ManyCopy
                 }
             };
 
-            chkUsePrefixRange = new CheckBox { Text = "Numbered prefix", Left = 405, Top = 670, AutoSize = true };
-            txtPrefixBase = new TextBox { Left = 530, Top = 667, Width = 100, Enabled = false, Text = "" };
-            var lblStartNum = new Label { Text = "Start:", Left = 635, Top = 670, AutoSize = true };
-            nudPrefixStart = new NumericUpDown { Left = 675, Top = 667, Width = 70, Minimum = 0, Maximum = 1_000_000, Value = 1, Enabled = false };
+            chkUsePrefixRange = new CheckBox { Text = "Numbered prefix", Left = 405, Top = 670, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            txtPrefixBase = new TextBox { Left = 530, Top = 667, Width = 100, Enabled = false, Text = "", Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            var lblStartNum = new Label { Text = "Start:", Left = 635, Top = 670, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            nudPrefixStart = new NumericUpDown { Left = 675, Top = 667, Width = 70, Minimum = 0, Maximum = 1_000_000, Value = 1, Enabled = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
             chkUsePrefixRange.CheckedChanged += (_, __) =>
             {
                 var on = chkUsePrefixRange.Checked;
@@ -379,11 +394,11 @@ namespace ManyCopy
                 if (on) { chkUsePrefix.Checked = false; txtPrefix.Enabled = false; }
             };
 
-            chkUseSuffix = new CheckBox { Text = "Suffix", Left = 760, Top = 670, AutoSize = true };
-            txtSuffix = new TextBox { Left = 820, Top = 667, Width = 160, Enabled = false, Text = "" };
+            chkUseSuffix = new CheckBox { Text = "Suffix", Left = 760, Top = 670, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            txtSuffix = new TextBox { Left = 820, Top = 667, Width = 160, Enabled = false, Text = "", Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right };
             chkUseSuffix.CheckedChanged += (_, __) => txtSuffix.Enabled = chkUseSuffix.Checked;
 
-            chkPreview = new CheckBox { Text = "Preview mode", Left = 10, Top = 700, AutoSize = true };
+            chkPreview = new CheckBox { Text = "Preview mode", Left = 10, Top = 700, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
 
             Controls.AddRange(new Control[]
             {
@@ -392,22 +407,28 @@ namespace ManyCopy
                 chkUseSuffix, txtSuffix, chkPreview
             });
 
-            // Actions + log
-            btnUndo = new Button { Text = "Undo", Left = 610, Top = 696, Width = 90, Height = 32, Enabled = false };
+            // Actions + log (stick to bottom)
+            btnUndo = new Button { Text = "Undo", Left = 610, Top = 696, Width = 90, Height = 32, Enabled = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Right };
             btnUndo.Click += (_, __) => DoUndo();
 
-            btnRedo = new Button { Text = "Redo", Left = 710, Top = 696, Width = 90, Height = 32, Enabled = false };
+            btnRedo = new Button { Text = "Redo", Left = 710, Top = 696, Width = 90, Height = 32, Enabled = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Right };
             btnRedo.Click += (_, __) => DoRedo();
 
-            btnEngage = new Button { Text = "Engage", Left = 810, Top = 694, Width = 120, Height = 36, Tag = "primary" };
+            btnEngage = new Button { Text = "Engage", Left = 810, Top = 694, Width = 120, Height = 36, Tag = "primary", Anchor = AnchorStyles.Bottom | AnchorStyles.Right };
             btnEngage.Click += (_, __) => RunCopyOrPreview();
 
-            lblStatus = new Label { Left = 10, Top = 730, AutoSize = true, Text = "Ready" };
+            lblStatus = new Label { Left = 10, Top = 730, AutoSize = true, Text = "Ready", Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
 
             logBox = new TextBox
             {
-                Left = 10, Top = 755, Width = 965, Height = 90,
-                Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Vertical
+                Left = 10,
+                Top = 755,
+                Width = 965,
+                Height = 90,
+                Multiline = true,
+                ReadOnly = true,
+                ScrollBars = ScrollBars.Vertical,
+                Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right
             };
 
             Controls.AddRange(new Control[] { btnUndo, btnRedo, btnEngage, lblStatus, logBox });
@@ -749,157 +770,147 @@ namespace ManyCopy
     }
 
     // ==================== Explorer multi-folder picker (coclass-based, corrected GUIDs) ====================
-internal static class ShellFolderPicker
-{
-    public static string[]? PickMultiple(IWin32Window owner)
+    internal static class ShellFolderPicker
     {
-        // Instantiate via COM coclass -> RCW of IFileOpenDialog
-        var dlg = (IFileOpenDialog)new FileOpenDialog();
-
-        // Options
-        int hr = dlg.GetOptions(out var opts);
-        if (hr != 0) Marshal.ThrowExceptionForHR(hr);
-
-        opts |= FOS.FOS_PICKFOLDERS | FOS.FOS_FORCEFILESYSTEM | FOS.FOS_ALLOWMULTISELECT;
-
-        hr = dlg.SetOptions(opts);
-        if (hr != 0) Marshal.ThrowExceptionForHR(hr);
-
-        hr = dlg.SetTitle("Select one or more destination folders");
-        if (hr != 0) Marshal.ThrowExceptionForHR(hr);
-
-        // Show
-        hr = dlg.Show(owner.Handle);
-        if (hr == unchecked((int)0x800704C7)) return Array.Empty<string>(); // canceled
-        if (hr != 0) Marshal.ThrowExceptionForHR(hr);
-
-        // Results
-        hr = dlg.GetResults(out var results);
-        if (hr != 0 || results is null) return Array.Empty<string>();
-
-        results.GetCount(out uint count);
-        var paths = new string[count];
-
-        for (uint i = 0; i < count; i++)
+        public static string[]? PickMultiple(IWin32Window owner)
         {
-            results.GetItemAt(i, out var item);
-            try
+            var dlg = (IFileOpenDialog)new FileOpenDialog();
+
+            int hr = dlg.GetOptions(out var opts);
+            if (hr != 0) Marshal.ThrowExceptionForHR(hr);
+
+            opts |= FOS.FOS_PICKFOLDERS | FOS.FOS_FORCEFILESYSTEM | FOS.FOS_ALLOWMULTISELECT;
+
+            hr = dlg.SetOptions(opts);
+            if (hr != 0) Marshal.ThrowExceptionForHR(hr);
+
+            hr = dlg.SetTitle("Select one or more destination folders");
+            if (hr != 0) Marshal.ThrowExceptionForHR(hr);
+
+            hr = dlg.Show(owner.Handle);
+            if (hr == unchecked((int)0x800704C7)) return Array.Empty<string>(); // canceled
+            if (hr != 0) Marshal.ThrowExceptionForHR(hr);
+
+            hr = dlg.GetResults(out var results);
+            if (hr != 0 || results is null) return Array.Empty<string>();
+
+            results.GetCount(out uint count);
+            var paths = new string[count];
+
+            for (uint i = 0; i < count; i++)
             {
-                item.GetDisplayName(SIGDN.SIGDN_FILESYSPATH, out var psz);
-                var path = psz != IntPtr.Zero ? Marshal.PtrToStringUni(psz) ?? string.Empty : string.Empty;
-                if (psz != IntPtr.Zero) Marshal.FreeCoTaskMem(psz);
-                paths[i] = path;
+                results.GetItemAt(i, out var item);
+                try
+                {
+                    item.GetDisplayName(SIGDN.SIGDN_FILESYSPATH, out var psz);
+                    var path = psz != IntPtr.Zero ? Marshal.PtrToStringUni(psz) ?? string.Empty : string.Empty;
+                    if (psz != IntPtr.Zero) Marshal.FreeCoTaskMem(psz);
+                    paths[i] = path;
+                }
+                finally
+                {
+                    if (item is not null) Marshal.ReleaseComObject(item);
+                }
             }
-            finally
-            {
-                if (item is not null) Marshal.ReleaseComObject(item);
-            }
+
+            if (results is not null) Marshal.ReleaseComObject(results);
+            Marshal.ReleaseComObject(dlg);
+            return paths;
         }
 
-        if (results is not null) Marshal.ReleaseComObject(results);
-        Marshal.ReleaseComObject(dlg);
-        return paths;
+        [ComImport, Guid("DC1C5A9C-E88A-4DDE-A5A1-60F82A20AEF7")]
+        private class FileOpenDialog { }
+
+        [ComImport, InterfaceType(ComInterfaceType.InterfaceIsIUnknown), Guid("42f85136-db7e-439c-85f1-e4075d135fc8")]
+        private interface IFileDialog
+        {
+            [PreserveSig] int Show(IntPtr parent);
+            [PreserveSig] int SetFileTypes(uint cFileTypes, IntPtr rgFilterSpec);
+            [PreserveSig] int SetFileTypeIndex(uint iFileType);
+            [PreserveSig] int GetFileTypeIndex(out uint piFileType);
+            [PreserveSig] int Advise(IntPtr pfde, out uint pdwCookie);
+            [PreserveSig] int Unadvise(uint pdwCookie);
+            [PreserveSig] int SetOptions(FOS fos);
+            [PreserveSig] int GetOptions(out FOS pfos);
+            [PreserveSig] int SetDefaultFolder(IShellItem psi);
+            [PreserveSig] int SetFolder(IShellItem psi);
+            [PreserveSig] int GetFolder(out IShellItem ppsi);
+            [PreserveSig] int GetCurrentSelection(out IShellItem ppsi);
+            [PreserveSig] int SetFileName([MarshalAs(UnmanagedType.LPWStr)] string pszName);
+            [PreserveSig] int GetFileName([MarshalAs(UnmanagedType.LPWStr)] out string pszName);
+            [PreserveSig] int SetTitle([MarshalAs(UnmanagedType.LPWStr)] string pszTitle);
+            [PreserveSig] int SetOkButtonLabel([MarshalAs(UnmanagedType.LPWStr)] string pszText);
+            [PreserveSig] int SetFileNameLabel([MarshalAs(UnmanagedType.LPWStr)] string pszLabel);
+            [PreserveSig] int GetResult(out IShellItem ppsi);
+            [PreserveSig] int AddPlace(IShellItem psi, FDAP fdap);
+            [PreserveSig] int SetDefaultExtension([MarshalAs(UnmanagedType.LPWStr)] string pszDefaultExtension);
+            [PreserveSig] int Close(int hr);
+            [PreserveSig] int SetClientGuid(ref Guid guid);
+            [PreserveSig] int ClearClientData();
+            [PreserveSig] int SetFilter(IntPtr pFilter);
+        }
+
+        [ComImport, InterfaceType(ComInterfaceType.InterfaceIsIUnknown), Guid("d57c7288-d4ad-4768-be02-9d969532d960")]
+        private interface IFileOpenDialog : IFileDialog
+        {
+            [PreserveSig] new int Show(IntPtr parent);
+            [PreserveSig] new int SetFileTypes(uint cFileTypes, IntPtr rgFilterSpec);
+            [PreserveSig] new int SetFileTypeIndex(uint iFileType);
+            [PreserveSig] new int GetFileTypeIndex(out uint piFileType);
+            [PreserveSig] new int Advise(IntPtr pfde, out uint pdwCookie);
+            [PreserveSig] new int Unadvise(uint pdwCookie);
+            [PreserveSig] new int SetOptions(FOS fos);
+            [PreserveSig] new int GetOptions(out FOS pfos);
+            [PreserveSig] new int SetDefaultFolder(IShellItem psi);
+            [PreserveSig] new int SetFolder(IShellItem psi);
+            [PreserveSig] new int GetFolder(out IShellItem ppsi);
+            [PreserveSig] new int GetCurrentSelection(out IShellItem ppsi);
+            [PreserveSig] new int SetFileName([MarshalAs(UnmanagedType.LPWStr)] string pszName);
+            [PreserveSig] new int GetFileName([MarshalAs(UnmanagedType.LPWStr)] out string pszName);
+            [PreserveSig] new int SetTitle([MarshalAs(UnmanagedType.LPWStr)] string pszTitle);
+            [PreserveSig] new int SetOkButtonLabel([MarshalAs(UnmanagedType.LPWStr)] string pszText);
+            [PreserveSig] new int SetFileNameLabel([MarshalAs(UnmanagedType.LPWStr)] string pszLabel);
+            [PreserveSig] new int GetResult(out IShellItem ppsi);
+            [PreserveSig] new int AddPlace(IShellItem psi, FDAP fdap);
+            [PreserveSig] new int SetDefaultExtension([MarshalAs(UnmanagedType.LPWStr)] string pszDefaultExtension);
+            [PreserveSig] new int Close(int hr);
+            [PreserveSig] new int SetClientGuid(ref Guid guid);
+            [PreserveSig] new int ClearClientData();
+            [PreserveSig] new int SetFilter(IntPtr pFilter);
+
+            [PreserveSig] int GetResults(out IShellItemArray ppenum);
+            [PreserveSig] int GetSelectedItems(out IShellItemArray ppsai);
+        }
+
+        [ComImport, InterfaceType(ComInterfaceType.InterfaceIsIUnknown), Guid("43826D1E-E718-42EE-BC55-A1E261C37BFE")]
+        private interface IShellItem
+        {
+            [PreserveSig] int BindToHandler(IntPtr pbc, ref Guid bhid, ref Guid riid, out IntPtr ppv);
+            [PreserveSig] int GetParent(out IShellItem ppsi);
+            [PreserveSig] int GetDisplayName(SIGDN sigdnName, out IntPtr ppszName);
+            [PreserveSig] int GetAttributes(uint sfgaoMask, out uint psfgaoAttribs);
+            [PreserveSig] int Compare(IShellItem psi, uint hint, out int piOrder);
+        }
+
+        [ComImport, InterfaceType(ComInterfaceType.InterfaceIsIUnknown), Guid("b63ea76d-1f85-456f-a19c-48159efa858b")]
+        private interface IShellItemArray
+        {
+            [PreserveSig] int BindToHandler(IntPtr pbc, ref Guid rbhid, ref Guid riid, out IntPtr ppvOut);
+            [PreserveSig] int GetPropertyStore(int flags, ref Guid riid, out IntPtr ppv);
+            [PreserveSig] int GetPropertyDescriptionList(ref PROPERTYKEY keyType, ref Guid riid, out IntPtr ppv);
+            [PreserveSig] int GetAttributes(SIATTRIBFLAGS dwAttribFlags, uint sfgaoMask, out uint psfgaoAttribs);
+            [PreserveSig] int GetCount(out uint pdwNumItems);
+            [PreserveSig] int GetItemAt(uint dwIndex, out IShellItem ppsi);
+            [PreserveSig] int EnumItems(out IntPtr ppenumShellItems);
+        }
+
+        private enum FDAP { FDAP_BOTTOM = 0, FDAP_TOP = 1 }
+        [Flags] private enum FOS : uint { FOS_PICKFOLDERS = 0x20, FOS_FORCEFILESYSTEM = 0x40, FOS_ALLOWMULTISELECT = 0x200 }
+        private enum SIGDN : uint { SIGDN_FILESYSPATH = 0x80058000 }
+        [StructLayout(LayoutKind.Sequential, Pack = 4)] private struct PROPERTYKEY { public Guid fmtid; public uint pid; }
+        [Flags] private enum SIATTRIBFLAGS { SIATTRIBFLAGS_AND = 1, SIATTRIBFLAGS_OR = 2, SIATTRIBFLAGS_APPCOMPAT = 3 }
     }
 
-    // COM coclass (no members; used only for activation)
-    [ComImport, Guid("DC1C5A9C-E88A-4DDE-A5A1-60F82A20AEF7")]
-    private class FileOpenDialog { }
-
-    // Interfaces (method order matters)
-    [ComImport, InterfaceType(ComInterfaceType.InterfaceIsIUnknown), Guid("42f85136-db7e-439c-85f1-e4075d135fc8")]
-    private interface IFileDialog
-    {
-        [PreserveSig] int Show(IntPtr parent);
-        [PreserveSig] int SetFileTypes(uint cFileTypes, IntPtr rgFilterSpec);
-        [PreserveSig] int SetFileTypeIndex(uint iFileType);
-        [PreserveSig] int GetFileTypeIndex(out uint piFileType);
-        [PreserveSig] int Advise(IntPtr pfde, out uint pdwCookie);
-        [PreserveSig] int Unadvise(uint pdwCookie);
-        [PreserveSig] int SetOptions(FOS fos);
-        [PreserveSig] int GetOptions(out FOS pfos);
-        [PreserveSig] int SetDefaultFolder(IShellItem psi);
-        [PreserveSig] int SetFolder(IShellItem psi);
-        [PreserveSig] int GetFolder(out IShellItem ppsi);
-        [PreserveSig] int GetCurrentSelection(out IShellItem ppsi);
-        [PreserveSig] int SetFileName([MarshalAs(UnmanagedType.LPWStr)] string pszName);
-        [PreserveSig] int GetFileName([MarshalAs(UnmanagedType.LPWStr)] out string pszName);
-        [PreserveSig] int SetTitle([MarshalAs(UnmanagedType.LPWStr)] string pszTitle);
-        [PreserveSig] int SetOkButtonLabel([MarshalAs(UnmanagedType.LPWStr)] string pszText);
-        [PreserveSig] int SetFileNameLabel([MarshalAs(UnmanagedType.LPWStr)] string pszLabel);
-        [PreserveSig] int GetResult(out IShellItem ppsi);
-        [PreserveSig] int AddPlace(IShellItem psi, FDAP fdap);
-        [PreserveSig] int SetDefaultExtension([MarshalAs(UnmanagedType.LPWStr)] string pszDefaultExtension);
-        [PreserveSig] int Close(int hr);
-        [PreserveSig] int SetClientGuid(ref Guid guid);
-        [PreserveSig] int ClearClientData();
-        [PreserveSig] int SetFilter(IntPtr pFilter);
-    }
-
-    [ComImport, InterfaceType(ComInterfaceType.InterfaceIsIUnknown), Guid("d57c7288-d4ad-4768-be02-9d969532d960")]
-    private interface IFileOpenDialog : IFileDialog
-    {
-        // re-declare base to preserve vtable order
-        [PreserveSig] new int Show(IntPtr parent);
-        [PreserveSig] new int SetFileTypes(uint cFileTypes, IntPtr rgFilterSpec);
-        [PreserveSig] new int SetFileTypeIndex(uint iFileType);
-        [PreserveSig] new int GetFileTypeIndex(out uint piFileType);
-        [PreserveSig] new int Advise(IntPtr pfde, out uint pdwCookie);
-        [PreserveSig] new int Unadvise(uint pdwCookie);
-        [PreserveSig] new int SetOptions(FOS fos);
-        [PreserveSig] new int GetOptions(out FOS pfos);
-        [PreserveSig] new int SetDefaultFolder(IShellItem psi);
-        [PreserveSig] new int SetFolder(IShellItem psi);
-        [PreserveSig] new int GetFolder(out IShellItem ppsi);
-        [PreserveSig] new int GetCurrentSelection(out IShellItem ppsi);
-        [PreserveSig] new int SetFileName([MarshalAs(UnmanagedType.LPWStr)] string pszName);
-        [PreserveSig] new int GetFileName([MarshalAs(UnmanagedType.LPWStr)] out string pszName);
-        [PreserveSig] new int SetTitle([MarshalAs(UnmanagedType.LPWStr)] string pszTitle);
-        [PreserveSig] new int SetOkButtonLabel([MarshalAs(UnmanagedType.LPWStr)] string pszText);
-        [PreserveSig] new int SetFileNameLabel([MarshalAs(UnmanagedType.LPWStr)] string pszLabel);
-        [PreserveSig] new int GetResult(out IShellItem ppsi);
-        [PreserveSig] new int AddPlace(IShellItem psi, FDAP fdap);
-        [PreserveSig] new int SetDefaultExtension([MarshalAs(UnmanagedType.LPWStr)] string pszDefaultExtension);
-        [PreserveSig] new int Close(int hr);
-        [PreserveSig] new int SetClientGuid(ref Guid guid);
-        [PreserveSig] new int ClearClientData();
-        [PreserveSig] new int SetFilter(IntPtr pFilter);
-
-        // new
-        [PreserveSig] int GetResults(out IShellItemArray ppenum);
-        [PreserveSig] int GetSelectedItems(out IShellItemArray ppsai);
-    }
-
-    [ComImport, InterfaceType(ComInterfaceType.InterfaceIsIUnknown), Guid("43826D1E-E718-42EE-BC55-A1E261C37BFE")]
-    private interface IShellItem
-    {
-        [PreserveSig] int BindToHandler(IntPtr pbc, ref Guid bhid, ref Guid riid, out IntPtr ppv);
-        [PreserveSig] int GetParent(out IShellItem ppsi);
-        [PreserveSig] int GetDisplayName(SIGDN sigdnName, out IntPtr ppszName);
-        [PreserveSig] int GetAttributes(uint sfgaoMask, out uint psfgaoAttribs);
-        [PreserveSig] int Compare(IShellItem psi, uint hint, out int piOrder);
-    }
-
-    // ✅ Correct GUID for IShellItemArray
-    [ComImport, InterfaceType(ComInterfaceType.InterfaceIsIUnknown), Guid("b63ea76d-1f85-456f-a19c-48159efa858b")]
-    private interface IShellItemArray
-    {
-        [PreserveSig] int BindToHandler(IntPtr pbc, ref Guid rbhid, ref Guid riid, out IntPtr ppvOut);
-        [PreserveSig] int GetPropertyStore(int flags, ref Guid riid, out IntPtr ppv);
-        [PreserveSig] int GetPropertyDescriptionList(ref PROPERTYKEY keyType, ref Guid riid, out IntPtr ppv);
-        [PreserveSig] int GetAttributes(SIATTRIBFLAGS dwAttribFlags, uint sfgaoMask, out uint psfgaoAttribs);
-        [PreserveSig] int GetCount(out uint pdwNumItems);
-        [PreserveSig] int GetItemAt(uint dwIndex, out IShellItem ppsi);
-        [PreserveSig] int EnumItems(out IntPtr ppenumShellItems);
-    }
-
-    private enum FDAP { FDAP_BOTTOM = 0, FDAP_TOP = 1 }
-    [Flags] private enum FOS : uint { FOS_PICKFOLDERS = 0x20, FOS_FORCEFILESYSTEM = 0x40, FOS_ALLOWMULTISELECT = 0x200 }
-    private enum SIGDN : uint { SIGDN_FILESYSPATH = 0x80058000 }
-    [StructLayout(LayoutKind.Sequential, Pack = 4)] private struct PROPERTYKEY { public Guid fmtid; public uint pid; }
-    [Flags] private enum SIATTRIBFLAGS { SIATTRIBFLAGS_AND = 1, SIATTRIBFLAGS_OR = 2, SIATTRIBFLAGS_APPCOMPAT = 3 }
-}
-
-    // ============= Small UI helpers =============
     internal static class UiExt
     {
         public static void ToolTip(this Control ctrl, string text)
