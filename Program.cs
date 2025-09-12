@@ -14,9 +14,10 @@ namespace ManyCopy
         [STAThread]
         static void Main()
         {
-            // --- DPI + modern visuals ---
+            // Keep WinForms defaults, but ensure good DPI behavior
             Application.EnableVisualStyles();
-            Application.SetHighDpiMode(HighDpiMode.PerMonitorV2); // Per-monitor DPI
+            Application.SetCompatibleTextRenderingDefault(false);
+            Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
             ApplicationConfiguration.Initialize();
             Application.Run(new MainForm());
         }
@@ -239,21 +240,23 @@ namespace ManyCopy
 
         public MainForm()
         {
-            Text = "ManyCopy v1.1.2 — Copy Files to Many Folders";
-            // ---- DPI-friendly form baseline ----
-            AutoScaleMode = AutoScaleMode.Dpi;
-            AutoScaleDimensions = new SizeF(96f, 96f);   // 100% DPI baseline
-            Font = new Font("Segoe UI", 9f);             // Good scaling font
-            MinimumSize = new Size(980, 760);            // Prevent cramped layouts
-
+            Text = "ManyCopy v1.1.3 — Copy Files to Many Folders";
             Width = 1000;
             Height = 880;
+            MinimumSize = new Size(900, 760);
             StartPosition = FormStartPosition.CenterScreen;
             KeyPreview = true;
+
+            // DPI-aware scaling without changing initial layout
+            AutoScaleMode = AutoScaleMode.Dpi;
+            AutoScaleDimensions = new SizeF(96f, 96f);
+            Font = new Font("Segoe UI", 9f);
+            DoubleBuffered = true;
+
             KeyDown += MainForm_KeyDown;
 
-            // Theme controls
-            cmbTheme = new ComboBox { Left = 820, Top = 12, Width = 155, DropDownStyle = ComboBoxStyle.DropDownList };
+            // Theme controls (top-right)
+            cmbTheme = new ComboBox { Left = 820, Top = 12, Width = 155, DropDownStyle = ComboBoxStyle.DropDownList, Anchor = AnchorStyles.Top | AnchorStyles.Right };
             cmbTheme.Items.AddRange(new object[] { "Auto (Windows)", "Light", "Dark" });
             cmbTheme.SelectedIndexChanged += (_, __) =>
             {
@@ -266,10 +269,9 @@ namespace ManyCopy
                 Theme.ApplyTo(this, mode);
                 SaveTheme(mode);
             };
-            cmbTheme.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             Controls.Add(cmbTheme);
 
-            btnRefreshTheme = new Button { Text = "Refresh Theme", Left = 700, Top = 11, Width = 110, Height = 24 };
+            btnRefreshTheme = new Button { Text = "Refresh Theme", Left = 700, Top = 11, Width = 110, Height = 24, Anchor = AnchorStyles.Top | AnchorStyles.Right };
             btnRefreshTheme.Click += (_, __) =>
             {
                 var mode = cmbTheme.SelectedIndex switch
@@ -280,18 +282,13 @@ namespace ManyCopy
                 };
                 Theme.ApplyTo(this, mode);
             };
-            btnRefreshTheme.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             Controls.Add(btnRefreshTheme);
 
             // Source
-            var lblSource = new Label { Text = "Source file:", Left = 10, Top = 50, AutoSize = true };
-            txtSource = new TextBox { Left = 95, Top = 47, Width = 780, AllowDrop = true };
-            txtSource.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-
-            btnBrowseSource = new Button { Text = "Browse…", Left = 885, Top = 46, Width = 90 };
+            var lblSource = new Label { Text = "Source file:", Left = 10, Top = 50, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
+            txtSource = new TextBox { Left = 95, Top = 47, Width = 780, AllowDrop = true, Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right };
+            btnBrowseSource = new Button { Text = "Browse…", Left = 885, Top = 46, Width = 90, Anchor = AnchorStyles.Top | AnchorStyles.Right };
             btnBrowseSource.Click += (_, __) => PickSource();
-            btnBrowseSource.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-
             txtSource.DragEnter += (s, e) =>
             {
                 if (e.Data?.GetDataPresent(DataFormats.FileDrop) == true &&
@@ -305,38 +302,25 @@ namespace ManyCopy
                     paths.Length == 1 && File.Exists(paths[0]))
                     txtSource.Text = paths[0];
             };
-
             Controls.AddRange(new Control[] { lblSource, txtSource, btnBrowseSource });
 
             // Range Helper
-            chkEnableRange = new CheckBox { Text = "Enable Range Helper", Left = 10, Top = 80, AutoSize = true };
+            chkEnableRange = new CheckBox { Text = "Enable Range Helper", Left = 10, Top = 80, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
             chkEnableRange.CheckedChanged += (_, __) => grpRange.Visible = chkEnableRange.Checked;
-            Controls.Add(chkEnableRange);
 
-            grpRange = new GroupBox { Text = "Range Helper", Left = 10, Top = 105, Width = 965, Height = 120, Visible = false };
-            grpRange.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-
-            var lblRoot = new Label { Text = "Root:", Left = 10, Top = 25, AutoSize = true };
-            txtRoot = new TextBox { Left = 60, Top = 22, Width = 800, Text = "" };
-            txtRoot.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-
-            btnBrowseRoot = new Button { Text = "Browse…", Left = 870, Top = 21, Width = 85 };
-            btnBrowseRoot.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            grpRange = new GroupBox { Text = "Range Helper", Left = 10, Top = 105, Width = 965, Height = 120, Visible = false, Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right };
+            var lblRoot = new Label { Text = "Root:", Left = 10, Top = 25, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
+            txtRoot = new TextBox { Left = 60, Top = 22, Width = 800, Text = "", Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right };
+            btnBrowseRoot = new Button { Text = "Browse…", Left = 870, Top = 21, Width = 85, Anchor = AnchorStyles.Top | AnchorStyles.Right };
             btnBrowseRoot.Click += (_, __) => PickRoot();
-
-            var lblRangePrefix = new Label { Text = "Prefix:", Left = 10, Top = 60, AutoSize = true };
-            txtRangePrefix = new TextBox { Left = 60, Top = 57, Width = 150, Text = "" };
-
-            var lblStart = new Label { Text = "Start #:", Left = 230, Top = 60, AutoSize = true };
-            txtStart = new TextBox { Left = 285, Top = 57, Width = 80, Text = "" };
-
-            var lblEnd = new Label { Text = "End #:", Left = 380, Top = 60, AutoSize = true };
-            txtEnd = new TextBox { Left = 430, Top = 57, Width = 80, Text = "" };
-
-            chkCreateMissing = new CheckBox { Text = "Create missing folders", Left = 530, Top = 59, AutoSize = true };
-
-            btnAddRange = new Button { Text = "Add Range →", Left = 760, Top = 56, Width = 195 };
-            btnAddRange.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            var lblRangePrefix = new Label { Text = "Prefix:", Left = 10, Top = 60, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
+            txtRangePrefix = new TextBox { Left = 60, Top = 57, Width = 150, Text = "", Anchor = AnchorStyles.Top | AnchorStyles.Left };
+            var lblStart = new Label { Text = "Start #:", Left = 230, Top = 60, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
+            txtStart = new TextBox { Left = 285, Top = 57, Width = 80, Text = "", Anchor = AnchorStyles.Top | AnchorStyles.Left };
+            var lblEnd = new Label { Text = "End #:", Left = 380, Top = 60, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
+            txtEnd = new TextBox { Left = 430, Top = 57, Width = 80, Text = "", Anchor = AnchorStyles.Top | AnchorStyles.Left };
+            chkCreateMissing = new CheckBox { Text = "Create missing folders", Left = 530, Top = 59, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
+            btnAddRange = new Button { Text = "Add Range →", Left = 760, Top = 56, Width = 195, Anchor = AnchorStyles.Top | AnchorStyles.Right };
             btnAddRange.Click += (_, __) => AddRangeToList();
 
             grpRange.Controls.AddRange(new Control[]
@@ -345,12 +329,11 @@ namespace ManyCopy
                 lblRangePrefix, txtRangePrefix, lblStart, txtStart, lblEnd, txtEnd,
                 chkCreateMissing, btnAddRange
             });
+            Controls.Add(chkEnableRange);
             Controls.Add(grpRange);
 
             // Destinations
-            var lblDest = new Label { Text = "Destination folders:", Left = 10, Top = 235, AutoSize = true };
-            Controls.Add(lblDest);
-
+            var lblDest = new Label { Text = "Destination folders:", Left = 10, Top = 235, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
             listDest = new ListBox
             {
                 Left = 10,
@@ -358,10 +341,9 @@ namespace ManyCopy
                 Width = 860,
                 Height = 400,
                 SelectionMode = SelectionMode.MultiExtended,
-                AllowDrop = true
+                AllowDrop = true,
+                Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right
             };
-            listDest.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
-
             listDest.DragEnter += (s, e) =>
             {
                 if (e.Data?.GetDataPresent(DataFormats.FileDrop) == true &&
@@ -375,31 +357,22 @@ namespace ManyCopy
                     foreach (var p in paths.Where(Directory.Exists)) AddDestPath(p);
             };
 
-            btnBrowseDest = new Button { Text = "Browse…", Left = 885, Top = 255, Width = 90 };
-            btnBrowseDest.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnBrowseDest = new Button { Text = "Browse…", Left = 885, Top = 255, Width = 90, Anchor = AnchorStyles.Top | AnchorStyles.Right };
             btnBrowseDest.Click += (_, __) => AddMultipleFolders();
 
-            btnRemoveSel = new Button { Text = "Remove", Left = 885, Top = 290, Width = 90 };
-            btnRemoveSel.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnRemoveSel = new Button { Text = "Remove", Left = 885, Top = 290, Width = 90, Anchor = AnchorStyles.Top | AnchorStyles.Right };
             btnRemoveSel.Click += (_, __) => RemoveSelected();
 
-            btnClear = new Button { Text = "Clear All", Left = 885, Top = 325, Width = 90 };
-            btnClear.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnClear = new Button { Text = "Clear All", Left = 885, Top = 325, Width = 90, Anchor = AnchorStyles.Top | AnchorStyles.Right };
             btnClear.Click += (_, __) => listDest.Items.Clear();
 
-            Controls.AddRange(new Control[] { listDest, btnBrowseDest, btnRemoveSel, btnClear });
+            Controls.AddRange(new Control[] { lblDest, listDest, btnBrowseDest, btnRemoveSel, btnClear });
 
             // Options
-            chkOverwrite = new CheckBox { Text = "Overwrite if exists", Left = 10, Top = 670, AutoSize = true };
-            Controls.Add(chkOverwrite);
+            chkOverwrite = new CheckBox { Text = "Overwrite if exists", Left = 10, Top = 670, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
 
-            chkUsePrefix = new CheckBox { Text = "Fixed prefix", Left = 160, Top = 670, AutoSize = true };
-            Controls.Add(chkUsePrefix);
-
-            txtPrefix = new TextBox { Left = 255, Top = 667, Width = 140, Enabled = false, Text = "" };
-            txtPrefix.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
-            Controls.Add(txtPrefix);
-
+            chkUsePrefix = new CheckBox { Text = "Fixed prefix", Left = 160, Top = 670, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            txtPrefix = new TextBox { Left = 255, Top = 667, Width = 140, Enabled = false, Text = "", Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
             chkUsePrefix.CheckedChanged += (_, __) =>
             {
                 txtPrefix.Enabled = chkUsePrefix.Checked;
@@ -410,20 +383,10 @@ namespace ManyCopy
                 }
             };
 
-            chkUsePrefixRange = new CheckBox { Text = "Numbered prefix", Left = 405, Top = 670, AutoSize = true };
-            Controls.Add(chkUsePrefixRange);
-
-            txtPrefixBase = new TextBox { Left = 530, Top = 667, Width = 100, Enabled = false, Text = "" };
-            txtPrefixBase.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
-            Controls.Add(txtPrefixBase);
-
-            var lblStartNum = new Label { Text = "Start:", Left = 635, Top = 670, AutoSize = true };
-            Controls.Add(lblStartNum);
-
-            nudPrefixStart = new NumericUpDown { Left = 675, Top = 667, Width = 70, Minimum = 0, Maximum = 1_000_000, Value = 1, Enabled = false };
-            nudPrefixStart.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
-            Controls.Add(nudPrefixStart);
-
+            chkUsePrefixRange = new CheckBox { Text = "Numbered prefix", Left = 405, Top = 670, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            txtPrefixBase = new TextBox { Left = 530, Top = 667, Width = 100, Enabled = false, Text = "", Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            var lblStartNum = new Label { Text = "Start:", Left = 635, Top = 670, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            nudPrefixStart = new NumericUpDown { Left = 675, Top = 667, Width = 70, Minimum = 0, Maximum = 1_000_000, Value = 1, Enabled = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
             chkUsePrefixRange.CheckedChanged += (_, __) =>
             {
                 var on = chkUsePrefixRange.Checked;
@@ -431,33 +394,30 @@ namespace ManyCopy
                 if (on) { chkUsePrefix.Checked = false; txtPrefix.Enabled = false; }
             };
 
-            chkUseSuffix = new CheckBox { Text = "Suffix", Left = 760, Top = 670, AutoSize = true };
-            Controls.Add(chkUseSuffix);
-
-            txtSuffix = new TextBox { Left = 820, Top = 667, Width = 160, Enabled = false, Text = "" };
-            txtSuffix.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
-            Controls.Add(txtSuffix);
-
+            chkUseSuffix = new CheckBox { Text = "Suffix", Left = 760, Top = 670, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            txtSuffix = new TextBox { Left = 820, Top = 667, Width = 160, Enabled = false, Text = "", Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right };
             chkUseSuffix.CheckedChanged += (_, __) => txtSuffix.Enabled = chkUseSuffix.Checked;
 
-            chkPreview = new CheckBox { Text = "Preview mode", Left = 10, Top = 700, AutoSize = true };
-            Controls.Add(chkPreview);
+            chkPreview = new CheckBox { Text = "Preview mode", Left = 10, Top = 700, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
 
-            // Actions + log
-            btnUndo = new Button { Text = "Undo", Left = 610, Top = 696, Width = 90, Height = 32, Enabled = false };
-            btnUndo.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            Controls.AddRange(new Control[]
+            {
+                chkOverwrite, chkUsePrefix, txtPrefix,
+                chkUsePrefixRange, txtPrefixBase, lblStartNum, nudPrefixStart,
+                chkUseSuffix, txtSuffix, chkPreview
+            });
+
+            // Actions + log (stick to bottom)
+            btnUndo = new Button { Text = "Undo", Left = 610, Top = 696, Width = 90, Height = 32, Enabled = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Right };
             btnUndo.Click += (_, __) => DoUndo();
 
-            btnRedo = new Button { Text = "Redo", Left = 710, Top = 696, Width = 90, Height = 32, Enabled = false };
-            btnRedo.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            btnRedo = new Button { Text = "Redo", Left = 710, Top = 696, Width = 90, Height = 32, Enabled = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Right };
             btnRedo.Click += (_, __) => DoRedo();
 
-            btnEngage = new Button { Text = "Engage", Left = 810, Top = 694, Width = 120, Height = 36, Tag = "primary" };
-            btnEngage.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            btnEngage = new Button { Text = "Engage", Left = 810, Top = 694, Width = 120, Height = 36, Tag = "primary", Anchor = AnchorStyles.Bottom | AnchorStyles.Right };
             btnEngage.Click += (_, __) => RunCopyOrPreview();
 
-            lblStatus = new Label { Left = 10, Top = 730, AutoSize = true, Text = "Ready" };
-            lblStatus.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            lblStatus = new Label { Left = 10, Top = 730, AutoSize = true, Text = "Ready", Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
 
             logBox = new TextBox
             {
@@ -467,9 +427,9 @@ namespace ManyCopy
                 Height = 90,
                 Multiline = true,
                 ReadOnly = true,
-                ScrollBars = ScrollBars.Vertical
+                ScrollBars = ScrollBars.Vertical,
+                Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right
             };
-            logBox.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
 
             Controls.AddRange(new Control[] { btnUndo, btnRedo, btnEngage, lblStatus, logBox });
 
@@ -932,7 +892,6 @@ namespace ManyCopy
             [PreserveSig] int Compare(IShellItem psi, uint hint, out int piOrder);
         }
 
-        // ✅ Correct GUID for IShellItemArray
         [ComImport, InterfaceType(ComInterfaceType.InterfaceIsIUnknown), Guid("b63ea76d-1f85-456f-a19c-48159efa858b")]
         private interface IShellItemArray
         {
@@ -952,7 +911,6 @@ namespace ManyCopy
         [Flags] private enum SIATTRIBFLAGS { SIATTRIBFLAGS_AND = 1, SIATTRIBFLAGS_OR = 2, SIATTRIBFLAGS_APPCOMPAT = 3 }
     }
 
-    // ============= Small UI helpers =============
     internal static class UiExt
     {
         public static void ToolTip(this Control ctrl, string text)
