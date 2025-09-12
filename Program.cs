@@ -57,6 +57,8 @@ namespace ManyCopy
 
             Width = 520;
             Height = 260;
+            // Use the same exe icon for splash window
+            try { this.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { }
 
             TryLoadSplashImage();
 
@@ -353,6 +355,8 @@ namespace ManyCopy
         public MainForm()
         {
             Text = $"ManyCopy v1.1.4 — Copy Files to Many Folders";
+            // Use the executable's icon for the window and taskbar
+            try { this.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { }
             Width = 1000;
             Height = 880;
             MinimumSize = new Size(900, 760);
