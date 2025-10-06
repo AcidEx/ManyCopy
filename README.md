@@ -12,9 +12,9 @@ breakdown of recent updates.
 ## Requirements
 
 - Windows desktop. The WinForms UI relies on Windows-specific APIs.
-- [.NET SDK 9.0](https://dotnet.microsoft.com/en-us/download) with Windows
+- [.NET SDK 8.0](https://dotnet.microsoft.com/en-us/download) with Windows
   targeting enabled. The main project and the accompanying test project both
-  target `net9.0-windows`.
+  target `net8.0-windows`.
 
 ## Building the application
 

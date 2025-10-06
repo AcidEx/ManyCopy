@@ -8,6 +8,8 @@ and uses [Semantic Versioning](https://semver.org/).
 
 ## [1.1.5] - 2024-05-05
 ### Changed
+- Retargeted the application and test projects to .NET 8.0 for compatibility
+  with the stable SDK and to unblock the failing test build.
 - Bumped the application metadata and UI labels to display version 1.1.5 on the
   splash screen and main window.
 - Expanded the README with build verification steps, including cleaning the

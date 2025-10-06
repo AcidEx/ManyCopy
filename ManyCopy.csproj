@@ -1,11 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-	<PropertyGroup>
-		<!-- Target .NET and Windows desktop -->
-		<TargetFramework>net9.0-windows</TargetFramework>
-		<UseWindowsForms>true</UseWindowsForms>
-		<EnableWindowsTargeting>true</EnableWindowsTargeting>
-		<OutputType>WinExe</OutputType>
+        <PropertyGroup>
+                <!-- Target .NET and Windows desktop -->
+                <TargetFramework>net8.0-windows</TargetFramework>
+                <UseWindowsForms>true</UseWindowsForms>
+                <EnableWindowsTargeting>true</EnableWindowsTargeting>
+                <OutputType>WinExe</OutputType>
 
 		<!-- Identity / Version -->
 		<AssemblyName>ManyCopy</AssemblyName>
