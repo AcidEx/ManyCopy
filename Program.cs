@@ -85,7 +85,7 @@ namespace ManyCopy
 
             Controls.Add(new Label
             {
-                Text = "v1.1.4",
+                Text = "v1.1.5",
                 ForeColor = Color.White,
                 Font = new Font("Segoe UI", 11f),
                 AutoSize = true,
@@ -354,7 +354,7 @@ namespace ManyCopy
 
         public MainForm()
         {
-            Text = $"ManyCopy v1.1.4 — Copy Files to Many Folders";
+            Text = $"ManyCopy v1.1.5 — Copy Files to Many Folders";
             // Use the executable's icon for the window and taskbar
             try { this.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { }
             Width = 1000;
@@ -568,14 +568,21 @@ namespace ManyCopy
             var prefix = (txtRangePrefix.Text ?? string.Empty).Trim();
             if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root)) { Log("ERROR: Destination root invalid."); return; }
             if (string.IsNullOrWhiteSpace(prefix)) { Log("ERROR: Range prefix is empty."); return; }
-            if (!int.TryParse((txtStart.Text ?? "").Trim(), out var start) ||
-                !int.TryParse((txtEnd.Text ?? "").Trim(), out var end)) { Log("ERROR: Start/End must be whole numbers."); return; }
+
+            var startText = (txtStart.Text ?? string.Empty).Trim();
+            var endText = (txtEnd.Text ?? string.Empty).Trim();
+
+            if (!int.TryParse(startText, out var start) ||
+                !int.TryParse(endText, out var end)) { Log("ERROR: Start/End must be whole numbers."); return; }
             if (start > end) { Log("ERROR: Start number greater than end number."); return; }
+
+            int padWidth = CalculateRangePadWidth(startText, endText);
 
             int added = 0, created = 0;
             for (int i = start; i <= end; i++)
             {
-                var folder = Path.Combine(root, $"{prefix}{i}");
+                string number = FormatRangeNumber(i, padWidth);
+                var folder = Path.Combine(root, $"{prefix}{number}");
                 if (!Directory.Exists(folder))
                 {
                     if (chkCreateMissing.Checked)
@@ -587,7 +594,7 @@ namespace ManyCopy
                 }
                 AddDestPath(folder); added++;
             }
-            Log($"Range added: {added} folders. Created new: {created}");
+            Log($"Range added: {added} folders. Created new folders: {created}");
         }
 
         private void AddMultipleFolders()
@@ -715,7 +722,39 @@ namespace ManyCopy
             if (chkOverwrite.Checked && backedUp > 0)
                 Log("Note: Undo will restore backups and remove new copies where appropriate.");
 
-            Status($"Copied {copied} • Skipped {skipped} • Failed {failed} • Undo:{_undo.Count} Redo:{_redo.Count}");
+            Status($"Copied {copied} • Skipped {skipped} • Failed {failed} • Undo: {_undo.Count} Redo: {_redo.Count}");
+        }
+
+        private static int CalculateRangePadWidth(string startText, string endText)
+        {
+            static int WidthFrom(string text)
+            {
+                if (string.IsNullOrWhiteSpace(text)) return 0;
+                var trimmed = text.Trim();
+                if (trimmed.Length == 0) return 0;
+
+                bool negative = trimmed[0] == '-' || trimmed[0] == '+';
+                if (negative)
+                {
+                    trimmed = trimmed[1..];
+                }
+
+                if (trimmed.Length <= 1) return 0;
+                if (!trimmed.All(char.IsDigit)) return 0;
+                if (trimmed[0] != '0') return 0;
+
+                return trimmed.Length;
+            }
+
+            return Math.Max(WidthFrom(startText), WidthFrom(endText));
+        }
+
+        private static string FormatRangeNumber(int value, int padWidth)
+        {
+            if (padWidth > 0)
+                return value.ToString($"D{padWidth}");
+
+            return value.ToString();
         }
 
         private static string BuildTargetName(
@@ -769,7 +808,7 @@ namespace ManyCopy
             _redo.Push(entry);
             UpdateUndoRedoButtons();
             Log($"Undo: Restored {restored}, Removed {removed}, Failed {failed}.");
-            Status($"Undid 1 step • Undo:{_undo.Count} Redo:{_redo.Count}");
+            Status($"Undid 1 step • Undo: {_undo.Count} Redo: {_redo.Count}");
         }
 
         private void DoRedo()
@@ -804,13 +843,24 @@ namespace ManyCopy
 
             PushUndo(entry);
             Log($"Redo: Copied {copied}, Skipped {skipped}, Failed {failed}. Backups created: {backedUp}.");
-            Status($"Redid 1 step • Undo:{_undo.Count} Redo:{_redo.Count}");
+            Status($"Redid 1 step • Undo: {_undo.Count} Redo: {_redo.Count}");
         }
 
         private void PushUndo(HistoryEntry entry)
         {
             _undo.Push(entry);
-            while (_undo.Count > HistoryCap) _undo.TrimExcess();
+
+            if (_undo.Count > HistoryCap)
+            {
+                var buffer = _undo.ToArray(); // newest-first ordering
+                _undo.Clear();
+                var limit = Math.Min(buffer.Length, HistoryCap);
+                for (int i = limit - 1; i >= 0; i--)
+                {
+                    _undo.Push(buffer[i]);
+                }
+            }
+
             UpdateUndoRedoButtons();
         }
 
