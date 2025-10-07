@@ -6,10 +6,11 @@ and uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.1.6] - 2025-10-07
 ### Fixed
-- Updated the CI workflow to use the .NET 8 SDK and remove the unused test
+- Updated CI to use the .NET 8 SDK and removed the unused extra test
   invocation so builds succeed from a clean checkout.
-- Adjusted the workflow commands so restore, build, and publish operate from the
+- Adjusted CI commands so restore, build, test, and publish run from the
   repository root just like local builds.
 
 ## [1.1.5] - 2024-05-05

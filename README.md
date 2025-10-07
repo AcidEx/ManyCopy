@@ -6,7 +6,7 @@ suffixes, configurable padding for folder numbers (e.g. `001`, `002`, `003`),
 and a log window that records every operation so you can quickly review what
 ran.
 
-Current release: **1.1.5**. Review the [changelog](CHANGELOG.md) for a
+Current release: **1.1.6**. Review the [changelog](CHANGELOG.md) for a
 breakdown of recent updates.
 
 ## Requirements
@@ -38,12 +38,12 @@ dotnet publish ManyCopy.csproj -c Release
 
 After building or publishing, launch the executable from the `bin` or
 `publish` directory to verify that the splash screen still shows the progress
-bar and `1.1.5` version label before ManyCopy opens.
+bar and `1.1.6` version label before ManyCopy opens.
 
 ## Verification
 
-There are no automated tests in the repository. Once a build completes, perform
-a quick manual smoke test:
+Automated tests are included. You can run `dotnet test -c Release` from the
+repository root. In addition, perform a quick manual smoke test:
 
 1. Start the application and confirm the splash screen shows the progress bar
    and version number.
