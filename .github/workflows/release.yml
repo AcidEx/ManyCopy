@@ -46,10 +46,11 @@ jobs:
       - name: Upload Release
         uses: softprops/action-gh-release@v2
         with:
-          draft: true
+          draft: false
           files: |
             bin/Release/net8.0-windows/win-x64/publish/ManyCopy-*-win-x64.zip
             bin/Release/net8.0-windows/win-x64/publish/ManyCopy.exe
             bin/Release/net8.0-windows/win-x64/publish/ManyCopy.exe.sha256
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
