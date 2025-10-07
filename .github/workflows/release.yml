@@ -19,77 +19,19 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
-      - name: Dotnet info
-        shell: pwsh
-        run: dotnet --info
-      - name: Show Program.cs head
+      - name: Prepare
         shell: pwsh
         run: |
-          Get-Content Program.cs -TotalCount 80
-      - name: Sanitize Program.cs
-        shell: pwsh
-        run: |
+          dotnet --info
+          # Normalize Program.cs newlines if any literal CRLFs leaked
           $p = 'Program.cs'
-          $raw = Get-Content $p -Raw
-          $fixed = $raw -replace '\r\n', "`r`n"
-          if ($fixed -ne $raw) { Set-Content $p -Value $fixed -Encoding UTF8; Write-Host 'Normalized literal CRLF sequences in Program.cs' } else { Write-Host 'No literal CRLF sequences found in Program.cs' }
-      - name: Sanitize csproj
-        shell: pwsh
-        run: |
-          $content = @"<Project Sdk=\"Microsoft.NET.Sdk\">
-  <PropertyGroup>
-    <TargetFramework>net8.0-windows</TargetFramework>
-    <UseWindowsForms>true</UseWindowsForms>
-    <EnableWindowsTargeting>true</EnableWindowsTargeting>
-    <OutputType>WinExe</OutputType>
-    <AssemblyName>ManyCopy</AssemblyName>
-    <RootNamespace>ManyCopy</RootNamespace>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <AssemblyVersion>1.1.6.0</AssemblyVersion>
-    <FileVersion>1.1.6.0</FileVersion>
-    <InformationalVersion>1.1.6</InformationalVersion>
-    <Version>1.1.6</Version>
-    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-    <SelfContained>true</SelfContained>
-    <PublishSingleFile>true</PublishSingleFile>
-    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
-    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
-    <PublishReadyToRun>true</PublishReadyToRun>
-    <PublishTrimmed>false</PublishTrimmed>
-    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
-    <DebugType>none</DebugType>
-    <GenerateDocumentationFile>false</GenerateDocumentationFile>
-    <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
-    <CopyOutputSymbolsToOutputDirectory>false</CopyOutputSymbolsToOutputDirectory>
-    <CopyOutputSymbolsToPublishDirectory>false</CopyOutputSymbolsToPublishDirectory>
-    <Platforms>x64</Platforms>
-    <Prefer32Bit>false</Prefer32Bit>
-    <ApplicationIcon>Assets\\ManyCopy.ico</ApplicationIcon>
-    <ApplicationManifest>app.manifest</ApplicationManifest>
-    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
-  </PropertyGroup>
-  <ItemGroup>
-    <EmbeddedResource Include=\"Assets\\splash.png\">
-      <LogicalName>Assets.splash.png</LogicalName>
-    </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include=\"ManyCopy.Core/ManyCopy.Core.csproj\" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Remove=\"tests\\**\\*.cs\" />
-    <EmbeddedResource Remove=\"tests\\**\\*\" />
-    <None Remove=\"tests\\**\\*\" />
-    <Compile Remove=\"ManyCopy.Core\\**\\*.cs\" />
-    <EmbeddedResource Remove=\"ManyCopy.Core\\**\\*\" />
-    <None Remove=\"ManyCopy.Core\\**\\*\" />
-  </ItemGroup>
-</Project>
-"@
-          Set-Content -Path ManyCopy.csproj -Value $content -Encoding UTF8
-          [xml](Get-Content ManyCopy.csproj -Raw) | Out-Null
-          Write-Host 'csproj XML validated.'
+          if (Test-Path $p) {
+            $raw = Get-Content $p -Raw
+            $fixed = $raw -replace '\r\n', "`r`n"
+            if ($fixed -ne $raw) { Set-Content $p -Value $fixed -Encoding UTF8 }
+          }
+          # Validate csproj loads as XML
+          [xml](Get-Content 'ManyCopy.csproj' -Raw) | Out-Null
       - name: Restore
         shell: pwsh
         run: dotnet restore
