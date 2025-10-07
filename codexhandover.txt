@@ -1,0 +1,34 @@
+— ManyCopy Handoff (Windows/PowerShell) —
+
+Repo/Branch
+- Path: C:\git\ManyCopy
+- Branch: codex/1.1.5 (tracking origin)
+
+Build/Run
+- Always clean before build (we’ve been deleting bin/obj).
+- Run (DLL): dotnet "C:\git\ManyCopy\bin\Release\net8.0-windows\win-x64\ManyCopy.dll"
+- Publish+Sign (self-signed, single-file, self-contained):
+  - pwsh -NoProfile -ExecutionPolicy Bypass -File C:\git\ManyCopy\tools\publish-and-sign.ps1 -Configuration Release
+- Latest exe: C:\git\ManyCopy\bin\Release\net8.0-windows\win-x64\publish\ManyCopy.exe
+- EXE signature: self-signed dev cert (untrusted root is expected), timestamped.
+
+Recent Changes
+- UI: Combined “Fixed/Numbered prefix” into a dropdown; added “Numbered suffix” + dropdown. Simplified bottom row.
+- Layout: Kept log area inside window; positioned “Ready” label above log; enlarged default log height; slightly reduced destination list height.
+- Build fixes: Exclude `tests/**` and `ManyCopy.Core/**` from app compile; set `GenerateTargetFrameworkAttribute=false`.
+- Manifest: Added `app.manifest` (UAC asInvoker, DPI PerMonitorV2) and wired in `ManyCopy.csproj`.
+- Scripts added:
+  - tools\sign.ps1
+  - tools\publish-and-sign.ps1
+
+Key Files
+- Program.cs
+- ManyCopy.csproj
+- app.manifest
+- tools\publish-and-sign.ps1
+- tools\sign.ps1
+
+Known/Next
+- Tests: `dotnet test` still aborts due to vstest dependency resolution. We upgraded xUnit (2.8.1) + VS runner (3.0.1), enabled CopyLocalLockFileAssemblies. Next options: add `global.json` to pin .NET 8 SDK, or use `dotnet xunit`, or capture `--diag` logs and fix probing.
+- Warning NETSDK1137 about WindowsDesktop SDK is benign; leave as-is for now.
+- On this host, prefer running the DLL (exe may not launch). The new signed single-file exe exists if we want to test further.
