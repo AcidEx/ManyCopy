@@ -16,9 +16,42 @@ jobs:
         with:
           fetch-depth: 0
       - name: Setup .NET SDK 8.x
-        uses: actions/setup-dotnet@v4
+        
+      - name: Dotnet info
+        shell: pwsh
+        run: dotnet --info
+      - name: Publish (Release)
+        shell: pwsh
+        run: |
+          Set-StrictMode -Version Latest
+          $ErrorActionPreference = 'Stop'
+          dotnet restore
+          dotnet build -c Release --nologo
+          try {
+            ./tools/publish-and-sign.ps1 -Configuration Release -Verbose
+          } catch {
+            Write-Host "Publish script failed: $(name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
         with:
-          dotnet-version: '8.0.x'
+          fetch-depth: 0
+      - name: Setup .NET SDK 8.x
+        
+      - name: Dotnet info
+        shell: pwsh
+        run: dotnet --info
       - name: Publish (Release)
         shell: pwsh
         run: |
@@ -53,4 +86,39 @@ jobs:
             bin/Release/net8.0-windows/win-x64/publish/ManyCopy.exe.sha256
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+.Exception.Message)" -ForegroundColor Yellow
+            Write-Host "Retrying dotnet publish with detailed verbosity..."
+            dotnet publish ManyCopy.csproj -c Release -r win-x64 -p:SelfContained=true -p:PublishSingleFile=true -p:PublishTrimmed=false -v normal
+            throw
+          }
+      - name: Compute checksum
+        shell: pwsh
+        run: |
+          $pub = Join-Path $pwd 'bin/Release/net8.0-windows/win-x64/publish'
+          $exe = Join-Path $pub 'ManyCopy.exe'
+          $hash = Get-FileHash -Algorithm SHA256 -Path $exe
+          Set-Content -Path (Join-Path $pub 'ManyCopy.exe.sha256') -Value ("{0} *ManyCopy.exe" -f $hash.Hash) -Encoding ASCII
+      - name: Create zip
+        shell: pwsh
+        run: |
+          $pub = Join-Path $pwd 'bin/Release/net8.0-windows/win-x64/publish'
+          $exe = Join-Path $pub 'ManyCopy.exe'
+          $sha = Join-Path $pub 'ManyCopy.exe.sha256'
+          $ver = (Select-String -Path 'ManyCopy.csproj' -Pattern '<Version>(.*?)</Version>').Matches.Groups[1].Value
+          if (-not $ver) { $ver = '1.1.5' }
+          $zip = Join-Path $pub ("ManyCopy-$ver-win-x64.zip")
+          if (Test-Path $zip) { Remove-Item $zip -Force }
+          Compress-Archive -LiteralPath $exe,$sha -DestinationPath $zip -Force
+      - name: Upload Release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: false
+          files: |
+            bin/Release/net8.0-windows/win-x64/publish/ManyCopy-*-win-x64.zip
+            bin/Release/net8.0-windows/win-x64/publish/ManyCopy.exe
+            bin/Release/net8.0-windows/win-x64/publish/ManyCopy.exe.sha256
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 
