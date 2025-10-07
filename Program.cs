@@ -49,7 +49,10 @@ namespace ManyCopy
     {
         private Image? _bg;
 
-        public SplashForm()\r\n        {\r\n            AutoScaleMode = AutoScaleMode.Dpi;\r\n            AutoScaleDimensions = new SizeF(96f, 96f);
+        public SplashForm()
+        {
+            AutoScaleMode = AutoScaleMode.Dpi;
+            AutoScaleDimensions = new SizeF(96f, 96f);
             FormBorderStyle = FormBorderStyle.None;
             StartPosition = FormStartPosition.CenterScreen;
             TopMost = true;
@@ -356,8 +359,10 @@ namespace ManyCopy
         private readonly Stack<HistoryEntry> _redo = new();
         private const int HistoryCap = 100;
 
-        public MainForm()\r\n        {\r\n            SuspendLayout();
-            { var info = typeof(Program).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? typeof(Program).Assembly.GetName().Version?.ToString() ?? ""; Text = $"ManyCopy v{info} - Copy Files to Many Folders"; }
+        public MainForm()
+        {
+            SuspendLayout();
+            { var info = typeof(Program).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? string.Empty; var shortInfo = info.Split('+','-',' ')[0]; if (Version.TryParse(shortInfo, out var v)) { shortInfo = v.Build >= 0 ? $"{v.Major}.{v.Minor}.{v.Build}" : $"{v.Major}.{v.Minor}"; if (shortInfo.EndsWith(".0")) shortInfo = shortInfo.TrimEnd('0').TrimEnd('.'); } if (string.IsNullOrWhiteSpace(shortInfo)) { shortInfo = typeof(Program).Assembly.GetName().Version?.ToString() ?? string.Empty; } Text = $"ManyCopy v{shortInfo} - Copy Files to Many Folders"; }
             // Use the executable's icon for the window and taskbar
             try { this.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { }
             Width = 1000;
@@ -366,7 +371,8 @@ namespace ManyCopy
             StartPosition = FormStartPosition.CenterScreen;
             KeyPreview = true;
 
-            AutoScaleMode = AutoScaleMode.Dpi;\r\n            AutoScaleDimensions = new SizeF(96f, 96f);
+            AutoScaleMode = AutoScaleMode.Dpi;
+            AutoScaleDimensions = new SizeF(96f, 96f);
             Font = new Font("Segoe UI", 9f);
             DoubleBuffered = true;
 
@@ -555,7 +561,10 @@ namespace ManyCopy
             // Ensure bottom log box stays within window bounds on resize
             Layout += (_, __) => LayoutBottom();
             Resize += (_, __) => LayoutBottom();
-            LayoutBottom();\r\n            ResumeLayout(true);\r\n\r\n            // Theme on load
+            LayoutBottom();
+            ResumeLayout(true);
+
+            // Theme on load
             var saved = LoadTheme();
             cmbTheme.SelectedIndex = saved switch { ThemeMode.Light => 1, ThemeMode.Dark => 2, _ => 0 };
             Theme.ApplyTo(this, saved);
@@ -917,7 +926,14 @@ namespace ManyCopy
             catch { }
             return ThemeMode.Auto;
         }
-    \r\n        protected override void OnDpiChanged(DpiChangedEventArgs e)\r\n        {\r\n            base.OnDpiChanged(e);\r\n            try { PerformAutoScale(); LayoutBottom(); Invalidate(true); } catch { }\r\n        }\r\n\r\n    }
+    
+        protected override void OnDpiChanged(DpiChangedEventArgs e)
+        {
+            base.OnDpiChanged(e);
+            try { PerformAutoScale(); LayoutBottom(); Invalidate(true); } catch { }
+        }
+
+    }
 
     // ---------- Models ----------
     internal sealed class CopyRecord
@@ -1077,6 +1093,9 @@ namespace ManyCopy
         [Flags] private enum SIATTRIBFLAGS { SIATTRIBFLAGS_AND = 1, SIATTRIBFLAGS_OR = 2, SIATTRIBFLAGS_APPCOMPAT = 3 }
     }
 }
+
+
+
 
 
 
