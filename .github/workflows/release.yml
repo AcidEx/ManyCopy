@@ -23,30 +23,8 @@ jobs:
       - name: Publish (Release)
         shell: pwsh
         run: |
-          Set-StrictMode -Version Latest
-          $ErrorActionPreference = 'Stop'
           dotnet restore
-          dotnet build -c Release --nologo
-          try {
-            ./tools/publish-and-sign.ps1 -Configuration Release -Verbose
-          } catch {
-            Write-Host "Publish script failed: $(name: Release
-
-on:
-  push:
-    tags:
-      - 'v*'
-
-permissions:
-  contents: write
-
-jobs:
-  release:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+          dotnet publish ManyCopy.csproj -c Release -r win-x64 -p:SelfContained=true -p:PublishSingleFile=true -p:PublishTrimmed=false --nologo
       - name: Setup .NET SDK 8.x
         
       - name: Dotnet info
@@ -56,8 +34,7 @@ jobs:
         shell: pwsh
         run: |
           dotnet restore
-          dotnet build -c Release --nologo
-          powershell -NoProfile -ExecutionPolicy Bypass -File tools/publish-and-sign.ps1 -Configuration Release
+          dotnet publish ManyCopy.csproj -c Release -r win-x64 -p:SelfContained=true -p:PublishSingleFile=true -p:PublishTrimmed=false --nologo
       - name: Compute checksum
         shell: pwsh
         run: |
@@ -120,5 +97,6 @@ jobs:
             bin/Release/net8.0-windows/win-x64/publish/ManyCopy.exe.sha256
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 
 
