@@ -34,6 +34,7 @@
     <Prefer32Bit>false</Prefer32Bit>
     <!-- App icon compiled into the EXE -->
     <ApplicationIcon>Assets\ManyCopy.ico</ApplicationIcon>
+      <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
   <!-- Embed splash.png inside the EXE so TryLoadSplashImage() can find it as a resource -->
   <ItemGroup>
