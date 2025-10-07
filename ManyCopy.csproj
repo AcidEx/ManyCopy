@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <!-- Target .NET and Windows desktop -->
     <TargetFramework>net8.0-windows</TargetFramework>
@@ -35,7 +35,7 @@
     <!-- App icon compiled into the EXE -->
     <ApplicationIcon>Assets\ManyCopy.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-  </PropertyGroup>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>`r`n  </PropertyGroup>
   <!-- Embed splash.png inside the EXE so TryLoadSplashImage() can find it as a resource -->
   <ItemGroup>
     <EmbeddedResource Include="Assets\splash.png">
