@@ -1,4 +1,4 @@
-# ManyCopy
+﻿# ManyCopy
 
 ManyCopy is a Windows utility that copies a single source file into many
 folders. The app supports sequential folder generation with optional range
@@ -61,3 +61,11 @@ Issues and pull requests are welcome! Before sending changes, please:
 ## License
 
 ManyCopy is released under the [MIT License](LICENSE).
+
+## Tests
+
+- SDK: Repo pinned via `global.json` to .NET SDK 8.0.414.
+- Restore: `dotnet restore`
+- Run: `dotnet test -c Release`
+
+If a newer SDK is installed, `global.json` will keep tooling on a compatible 8.0 feature band.
