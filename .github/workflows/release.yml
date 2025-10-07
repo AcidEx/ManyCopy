@@ -19,7 +19,20 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
-      
+      - name: Dotnet info
+        shell: pwsh
+        run: dotnet --info
+      - name: Show Program.cs head
+        shell: pwsh
+        run: |
+          Get-Content Program.cs -TotalCount 80
+      - name: Sanitize Program.cs
+        shell: pwsh
+        run: |
+          $p = 'Program.cs'
+          $raw = Get-Content $p -Raw
+          $fixed = $raw -replace '\r\n', "`r`n"
+          if ($fixed -ne $raw) { Set-Content $p -Value $fixed -Encoding UTF8; Write-Host 'Normalized literal CRLF sequences in Program.cs' } else { Write-Host 'No literal CRLF sequences found in Program.cs' }
       - name: Sanitize csproj
         shell: pwsh
         run: |
@@ -73,19 +86,16 @@ jobs:
     <None Remove=\"ManyCopy.Core\\**\\*\" />
   </ItemGroup>
 </Project>
-"@; Set-Content -Path ManyCopy.csproj -Value $content -Encoding UTF8
+"@
+          Set-Content -Path ManyCopy.csproj -Value $content -Encoding UTF8
           [xml](Get-Content ManyCopy.csproj -Raw) | Out-Null
           Write-Host 'csproj XML validated.'
-      - name: Show csproj head
+      - name: Restore
         shell: pwsh
-        run: |
-          Write-Host '--- ManyCopy.csproj HEAD ---'
-          Get-Content ManyCopy.csproj -TotalCount 60
-          Write-Host '--- EOF ---'
+        run: dotnet restore
       - name: Publish (Release)
         shell: pwsh
         run: |
-          dotnet restore
           dotnet publish ManyCopy.csproj -c Release -r win-x64 -p:SelfContained=true -p:PublishSingleFile=true -p:PublishTrimmed=false --nologo
       - name: Compute checksum
         shell: pwsh
@@ -115,5 +125,3 @@ jobs:
             bin/Release/net8.0-windows/win-x64/publish/ManyCopy.exe.sha256
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-
