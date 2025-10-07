@@ -1,25 +1,24 @@
-— ManyCopy Handoff (Windows/PowerShell) —
+ManyCopy Handoff (Windows/PowerShell)
 
 Repo/Branch
-- Path: C:\git\ManyCopy
+- Path: I:\ManyCopy\ManyCopy
 - Branch: codex/1.1.5 (tracking origin)
 
 Build/Run
-- Always clean before build (we’ve been deleting bin/obj).
-- Run (DLL): dotnet "C:\git\ManyCopy\bin\Release\net8.0-windows\win-x64\ManyCopy.dll"
+- Clean: delete bin/obj before builds.
+- Run (DLL): dotnet "I:\ManyCopy\ManyCopy\bin\Release\net8.0-windows\win-x64\ManyCopy.dll"
 - Publish+Sign (self-signed, single-file, self-contained):
-  - pwsh -NoProfile -ExecutionPolicy Bypass -File C:\git\ManyCopy\tools\publish-and-sign.ps1 -Configuration Release
-- Latest exe: C:\git\ManyCopy\bin\Release\net8.0-windows\win-x64\publish\ManyCopy.exe
-- EXE signature: self-signed dev cert (untrusted root is expected), timestamped.
+  - powershell.exe -NoProfile -ExecutionPolicy Bypass -File I:\ManyCopy\ManyCopy\tools\publish-and-sign.ps1 -Configuration Release
+- Latest exe: I:\ManyCopy\ManyCopy\bin\Release\net8.0-windows\win-x64\publish\ManyCopy.exe
+- EXE signature: self-signed dev cert, timestamped. Windows will show an untrusted root (expected). Signtool not installed locally; script output shows certificate and status.
 
 Recent Changes
-- UI: Combined “Fixed/Numbered prefix” into a dropdown; added “Numbered suffix” + dropdown. Simplified bottom row.
-- Layout: Kept log area inside window; positioned “Ready” label above log; enlarged default log height; slightly reduced destination list height.
-- Build fixes: Exclude `tests/**` and `ManyCopy.Core/**` from app compile; set `GenerateTargetFrameworkAttribute=false`.
+- UI: Combined Fixed/Numbered prefix into a dropdown; added Numbered suffix + dropdown. Simplified bottom row.
+- Layout: Kept log area inside window; positioned Ready label above log; enlarged default log height; slightly reduced destination list height.
+- Build: Exclude `tests/**` and `ManyCopy.Core/**` from app compile; set `GenerateTargetFrameworkAttribute=false`.
 - Manifest: Added `app.manifest` (UAC asInvoker, DPI PerMonitorV2) and wired in `ManyCopy.csproj`.
-- Scripts added:
-  - tools\sign.ps1
-  - tools\publish-and-sign.ps1
+- Scripts: `tools\sign.ps1`, `tools\publish-and-sign.ps1`.
+- Tests/tooling: Added `global.json` pinning SDK 8.0.414; added `Microsoft.NET.Test.Sdk` 17.11.1 and `Newtonsoft.Json` 13.0.3 (PrivateAssets=all) to `tests\ManyCopy.Tests\ManyCopy.Tests.csproj`.
 
 Key Files
 - Program.cs
@@ -27,8 +26,17 @@ Key Files
 - app.manifest
 - tools\publish-and-sign.ps1
 - tools\sign.ps1
+- tests\ManyCopy.Tests\ManyCopy.Tests.csproj
+- global.json
+
+Status
+- Build: Release win-x64 OK.
+- Run: DLL launch OK; EXE launch OK (terminated to avoid file locks).
+- Publish: OK; signed single-file EXE present at path above.
+- Tests: 10 passed, 0 failed (`dotnet test -c Release`) under .NET SDK 8.0.414.
 
 Known/Next
-- Tests: `dotnet test` still aborts due to vstest dependency resolution. We upgraded xUnit (2.8.1) + VS runner (3.0.1), enabled CopyLocalLockFileAssemblies. Next options: add `global.json` to pin .NET 8 SDK, or use `dotnet xunit`, or capture `--diag` logs and fix probing.
 - Warning NETSDK1137 about WindowsDesktop SDK is benign; leave as-is for now.
-- On this host, prefer running the DLL (exe may not launch). The new signed single-file exe exists if we want to test further.
+- Warning WFAC010 about High DPI in manifest — consider setting via `Application.SetHighDpiMode` or project property later.
+- Optional: add CI to enforce SDK pin and run tests; consider trusted code signing for releases.
+
