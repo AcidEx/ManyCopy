@@ -19,7 +19,8 @@ breakdown of recent updates.
 ## Building the application
 
 From the repository root, use the .NET CLI to restore dependencies and build
-the WinForms executable:
+the WinForms executable. Running the commands in the top-level directory works
+because the repository is organised around the single `ManyCopy.csproj` file:
 
 ```bash
 dotnet clean
@@ -35,11 +36,20 @@ executable. To create a packaged build, run:
 dotnet publish ManyCopy.csproj -c Release
 ```
 
-After building or publishing, launch the executable to verify that the splash
-screen still shows the progress bar and `1.1.5` version label before ManyCopy
-opens.
+After building or publishing, launch the executable from the `bin` or
+`publish` directory to verify that the splash screen still shows the progress
+bar and `1.1.5` version label before ManyCopy opens.
 
-## Running tests
+## Verification
+
+There are no automated tests in the repository. Once a build completes, perform
+a quick manual smoke test:
+
+1. Start the application and confirm the splash screen shows the progress bar
+   and version number.
+2. Create a few range-based folders to ensure leading-zero padding is preserved.
+3. Copy a source file into the generated folders and review the log window for
+   success messages.
 
 ## Contributing
 

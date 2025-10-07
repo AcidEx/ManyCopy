@@ -6,6 +6,10 @@ and uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+- Updated the CI workflow to use the .NET 8 SDK and remove the unused test
+  invocation so builds succeed from a clean checkout.
+
 ## [1.1.5] - 2024-05-05
 ### Changed
 - Retargeted the application to .NET 8.0 for compatibility with the stable SDK
