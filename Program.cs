@@ -323,14 +323,17 @@ namespace ManyCopy
         private Button btnRemoveSel = null!;
         private Button btnClear = null!;
 
-        private CheckBox chkOverwrite = null!;
-        private CheckBox chkUsePrefix = null!;
-        private TextBox txtPrefix = null!;
-        private CheckBox chkUsePrefixRange = null!;
-        private TextBox txtPrefixBase = null!;
-        private NumericUpDown nudPrefixStart = null!;
-        private CheckBox chkUseSuffix = null!;
-        private TextBox txtSuffix = null!;
+                private CheckBox chkOverwrite = null!;
+        // Prefix controls (mode dropdown replacing separate checkboxes)
+        private ComboBox cmbPrefixMode = null!; // 0=None, 1=Fixed, 2=Numbered
+        private TextBox txtPrefix = null!;      // Fixed prefix text
+        private TextBox txtPrefixBase = null!;  // Numbered prefix base
+        private NumericUpDown nudPrefixStart = null!; // Numbered prefix start
+        // Suffix controls (mode dropdown with fixed/numbered)
+        private ComboBox cmbSuffixMode = null!; // 0=None, 1=Fixed, 2=Numbered
+        private TextBox txtSuffix = null!;      // Fixed suffix text
+        private TextBox txtSuffixBase = null!;  // Numbered suffix base
+        private NumericUpDown nudSuffixStart = null!; // Numbered suffix start
         private CheckBox chkPreview = null!;
 
         private CheckBox chkEnableRange = null!;
@@ -475,42 +478,55 @@ namespace ManyCopy
             Controls.AddRange(new Control[] { lblDest, listDest, btnBrowseDest, btnRemoveSel, btnClear });
 
             // Options
-            chkOverwrite = new CheckBox { Text = "Overwrite if exists", Left = 10, Top = 670, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+                        chkOverwrite = new CheckBox { Text = "Overwrite if exists", Left = 10, Top = 670, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
 
-            chkUsePrefix = new CheckBox { Text = "Fixed prefix", Left = 160, Top = 670, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
-            txtPrefix = new TextBox { Left = 255, Top = 667, Width = 140, Enabled = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
-            chkUsePrefix.CheckedChanged += (_, __) =>
+            // Prefix mode: None / Fixed / Numbered
+            var lblPrefix = new Label { Text = "Prefix:", Left = 160, Top = 670, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            cmbPrefixMode = new ComboBox { Left = 210, Top = 666, Width = 90, DropDownStyle = ComboBoxStyle.DropDownList, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            cmbPrefixMode.Items.AddRange(new object[] { "None", "Fixed", "Numbered" });
+            cmbPrefixMode.SelectedIndex = 0;
+
+            txtPrefix = new TextBox { Left = 310, Top = 667, Width = 120, Enabled = false, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            txtPrefixBase = new TextBox { Left = 310, Top = 667, Width = 100, Enabled = false, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            var lblStartNum = new Label { Text = "Start:", Left = 415, Top = 670, AutoSize = true, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            nudPrefixStart = new NumericUpDown { Left = 455, Top = 667, Width = 60, Minimum = 0, Maximum = 1_000_000, Value = 1, Enabled = false, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+
+            cmbPrefixMode.SelectedIndexChanged += (_, __) =>
             {
-                txtPrefix.Enabled = chkUsePrefix.Checked;
-                if (chkUsePrefix.Checked)
-                {
-                    chkUsePrefixRange.Checked = false;
-                    txtPrefixBase.Enabled = false; nudPrefixStart.Enabled = false;
-                }
+                var mode = cmbPrefixMode.SelectedIndex;
+                // Reset visibility
+                txtPrefix.Visible = (mode == 1); txtPrefix.Enabled = (mode == 1);
+                txtPrefixBase.Visible = (mode == 2); txtPrefixBase.Enabled = (mode == 2);
+                lblStartNum.Visible = (mode == 2); nudPrefixStart.Visible = (mode == 2); nudPrefixStart.Enabled = (mode == 2);
             };
 
-            chkUsePrefixRange = new CheckBox { Text = "Numbered prefix", Left = 405, Top = 670, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
-            txtPrefixBase = new TextBox { Left = 530, Top = 667, Width = 100, Enabled = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
-            var lblStartNum = new Label { Text = "Start:", Left = 635, Top = 670, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
-            nudPrefixStart = new NumericUpDown { Left = 675, Top = 667, Width = 70, Minimum = 0, Maximum = 1_000_000, Value = 1, Enabled = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
-            chkUsePrefixRange.CheckedChanged += (_, __) =>
-            {
-                var on = chkUsePrefixRange.Checked;
-                txtPrefixBase.Enabled = on; nudPrefixStart.Enabled = on;
-                if (on) { chkUsePrefix.Checked = false; txtPrefix.Enabled = false; }
-            };
+            // Suffix mode: None / Fixed / Numbered
+            var lblSuffix = new Label { Text = "Suffix:", Left = 530, Top = 670, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            cmbSuffixMode = new ComboBox { Left = 580, Top = 666, Width = 90, DropDownStyle = ComboBoxStyle.DropDownList, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            cmbSuffixMode.Items.AddRange(new object[] { "None", "Fixed", "Numbered" });
+            cmbSuffixMode.SelectedIndex = 0;
 
-            chkUseSuffix = new CheckBox { Text = "Suffix", Left = 760, Top = 670, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
-            txtSuffix = new TextBox { Left = 820, Top = 667, Width = 160, Enabled = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right };
-            chkUseSuffix.CheckedChanged += (_, __) => txtSuffix.Enabled = chkUseSuffix.Checked;
+            txtSuffix = new TextBox { Left = 680, Top = 667, Width = 120, Enabled = false, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            txtSuffixBase = new TextBox { Left = 680, Top = 667, Width = 100, Enabled = false, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            var lblSuffixStart = new Label { Text = "Start:", Left = 785, Top = 670, AutoSize = true, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            nudSuffixStart = new NumericUpDown { Left = 825, Top = 667, Width = 60, Minimum = 0, Maximum = 1_000_000, Value = 1, Enabled = false, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+
+            cmbSuffixMode.SelectedIndexChanged += (_, __) =>
+            {
+                var mode = cmbSuffixMode.SelectedIndex;
+                txtSuffix.Visible = (mode == 1); txtSuffix.Enabled = (mode == 1);
+                txtSuffixBase.Visible = (mode == 2); txtSuffixBase.Enabled = (mode == 2);
+                lblSuffixStart.Visible = (mode == 2); nudSuffixStart.Visible = (mode == 2); nudSuffixStart.Enabled = (mode == 2);
+            };
 
             chkPreview = new CheckBox { Text = "Preview mode", Left = 10, Top = 700, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
 
             Controls.AddRange(new Control[]
             {
-                chkOverwrite, chkUsePrefix, txtPrefix,
-                chkUsePrefixRange, txtPrefixBase, lblStartNum, nudPrefixStart,
-                chkUseSuffix, txtSuffix, chkPreview
+                chkOverwrite,
+                lblPrefix, cmbPrefixMode, txtPrefix, txtPrefixBase, lblStartNum, nudPrefixStart,
+                lblSuffix, cmbSuffixMode, txtSuffix, txtSuffixBase, lblSuffixStart, nudSuffixStart,
+                chkPreview
             });
 
             // Actions + log
@@ -625,15 +641,22 @@ namespace ManyCopy
             if (string.IsNullOrWhiteSpace(src) || !File.Exists(src)) { Log("ERROR: Source file not found."); return; }
             if (listDest.Items.Count == 0) { Log("ERROR: No destinations selected."); return; }
 
-            bool useFixed = chkUsePrefix.Checked && !string.IsNullOrWhiteSpace(txtPrefix.Text);
-            bool useRange = chkUsePrefixRange.Checked && !string.IsNullOrWhiteSpace(txtPrefixBase.Text);
-            bool useSuffix = chkUseSuffix.Checked && !string.IsNullOrWhiteSpace(txtSuffix.Text);
+                        int prefixMode = cmbPrefixMode.SelectedIndex; // 0=None,1=Fixed,2=Numbered
+            int suffixMode = cmbSuffixMode.SelectedIndex; // 0=None,1=Fixed,2=Numbered
 
-            if (chkUsePrefix.Checked && string.IsNullOrWhiteSpace(txtPrefix.Text)) { Log("ERROR: Fixed prefix enabled but empty."); return; }
-            if (chkUsePrefixRange.Checked && string.IsNullOrWhiteSpace(txtPrefixBase.Text)) { Log("ERROR: Numbered prefix enabled but base is empty."); return; }
-            if (chkUseSuffix.Checked && string.IsNullOrWhiteSpace(txtSuffix.Text)) { Log("ERROR: Suffix enabled but empty."); return; }
+            bool useFixed = (prefixMode == 1) && !string.IsNullOrWhiteSpace(txtPrefix.Text);
+            bool useRange = (prefixMode == 2) && !string.IsNullOrWhiteSpace(txtPrefixBase.Text);
 
-            int idx = (int)nudPrefixStart.Value;
+            bool useSuffixFixed = (suffixMode == 1) && !string.IsNullOrWhiteSpace(txtSuffix.Text);
+            bool useSuffixRange = (suffixMode == 2) && !string.IsNullOrWhiteSpace(txtSuffixBase.Text);
+
+            if (prefixMode == 1 && string.IsNullOrWhiteSpace(txtPrefix.Text)) { Log("ERROR: Fixed prefix enabled but empty."); return; }
+            if (prefixMode == 2 && string.IsNullOrWhiteSpace(txtPrefixBase.Text)) { Log("ERROR: Numbered prefix enabled but base is empty."); return; }
+            if (suffixMode == 1 && string.IsNullOrWhiteSpace(txtSuffix.Text)) { Log("ERROR: Suffix enabled but empty."); return; }
+            if (suffixMode == 2 && string.IsNullOrWhiteSpace(txtSuffixBase.Text)) { Log("ERROR: Numbered suffix enabled but base is empty."); return; }
+
+            int idxPrefix = (int)nudPrefixStart.Value;
+            int idxSuffix = (int)nudSuffixStart.Value;
             string baseName = Path.GetFileName(src);
 
             var planned = new List<(string folder, string destFile, bool exists)>();
@@ -646,11 +669,11 @@ namespace ManyCopy
                     continue;
                 }
 
-                string finalName = NamingHelpers.BuildTargetName(baseName, useFixed, txtPrefix.Text, useRange, txtPrefixBase.Text, idx, useSuffix, txtSuffix.Text);
+                string finalName = NamingHelpers.BuildTargetName(baseName, useFixed, txtPrefix.Text, useRange, txtPrefixBase.Text, idxPrefix, (useSuffixFixed || useSuffixRange), (useSuffixRange ? (txtSuffixBase.Text + idxSuffix.ToString()) : txtSuffix.Text));
                 var dest = Path.Combine(folder, finalName);
 
                 planned.Add((folder, dest, File.Exists(dest)));
-                if (useRange) idx++;
+                if (useRange) idxPrefix++; if (useSuffixRange) idxSuffix++;
             }
 
             if (chkPreview.Checked)
@@ -1011,3 +1034,4 @@ namespace ManyCopy
         [Flags] private enum SIATTRIBFLAGS { SIATTRIBFLAGS_AND = 1, SIATTRIBFLAGS_OR = 2, SIATTRIBFLAGS_APPCOMPAT = 3 }
     }
 }
+
