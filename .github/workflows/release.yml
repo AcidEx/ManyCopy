@@ -22,6 +22,12 @@ jobs:
       - name: Dotnet info
         shell: pwsh
         run: dotnet --info
+      - name: Show csproj head
+        shell: pwsh
+        run: |
+          Write-Host '--- ManyCopy.csproj HEAD ---'
+          Get-Content ManyCopy.csproj -TotalCount 60
+          Write-Host '--- EOF ---'
       - name: Publish (Release)
         shell: pwsh
         run: |
@@ -55,3 +61,4 @@ jobs:
             bin/Release/net8.0-windows/win-x64/publish/ManyCopy.exe.sha256
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
