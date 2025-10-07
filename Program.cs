@@ -554,6 +554,10 @@ namespace ManyCopy
             };
 
             Controls.AddRange(new Control[] { btnUndo, btnRedo, btnEngage, lblStatus, logBox });
+            // Ensure bottom log box stays within window bounds on resize
+            Layout += (_, __) => LayoutBottom();
+            Resize += (_, __) => LayoutBottom();
+            LayoutBottom();
 
             // Theme on load
             var saved = LoadTheme();
@@ -845,6 +849,29 @@ namespace ManyCopy
         }
 
         private void Log(string msg) => logBox.AppendText((msg ?? string.Empty) + Environment.NewLine);
+        private void LayoutBottom()
+        {
+            if (logBox == null) return;
+            int marginLeft = 10, marginRight = 10, marginBottom = 12;
+            int desiredHeight = 100; // default height for log box
+
+            // Compute minimum top so it never overlaps the action buttons or status label
+            int minTop = 0;
+            try { minTop = Math.Max(lblStatus?.Bottom ?? 0, Math.Max(btnUndo?.Bottom ?? 0, Math.Max(btnRedo?.Bottom ?? 0, btnEngage?.Bottom ?? 0))) + 10; }
+            catch { minTop = 700; }
+
+            int clientW = this.ClientSize.Width;
+            int clientH = this.ClientSize.Height;
+
+            int width = Math.Max(100, clientW - marginLeft - marginRight);
+            int top = Math.Max(minTop, clientH - marginBottom - desiredHeight);
+            int height = Math.Max(50, clientH - marginBottom - top);
+
+            logBox.Left = marginLeft;
+            logBox.Width = width;
+            logBox.Top = top;
+            logBox.Height = height;
+        }
         private void Status(string msg) { lblStatus.Text = msg; }
 
         private string SettingsPath =>
@@ -1034,4 +1061,5 @@ namespace ManyCopy
         [Flags] private enum SIATTRIBFLAGS { SIATTRIBFLAGS_AND = 1, SIATTRIBFLAGS_OR = 2, SIATTRIBFLAGS_APPCOMPAT = 3 }
     }
 }
+
 
