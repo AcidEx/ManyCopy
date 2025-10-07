@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -358,7 +358,7 @@ namespace ManyCopy
 
         public MainForm()
         {
-            Text = $"ManyCopy v1.1.5 — Copy Files to Many Folders";
+            Text = $"ManyCopy v1.1.5 â€” Copy Files to Many Folders";
             // Use the executable's icon for the window and taskbar
             try { this.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { }
             Width = 1000;
@@ -396,7 +396,7 @@ namespace ManyCopy
             // Source row
             var lblSource = new Label { Text = "Source file:", Left = 10, Top = 50, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
             txtSource = new TextBox { Left = 95, Top = 47, Width = 780, AllowDrop = true, Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right };
-            btnBrowseSource = new Button { Text = "Browse…", Left = 885, Top = 46, Width = 90, Anchor = AnchorStyles.Top | AnchorStyles.Right };
+            btnBrowseSource = new Button { Text = "Browse...", Left = 885, Top = 46, Width = 90, Anchor = AnchorStyles.Top | AnchorStyles.Right };
             btnBrowseSource.Click += (_, __) => PickSource();
             txtSource.DragEnter += (s, e) =>
             {
@@ -420,7 +420,7 @@ namespace ManyCopy
             grpRange = new GroupBox { Text = "Range Helper", Left = 10, Top = 105, Width = 965, Height = 120, Visible = false, Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right };
             var lblRoot = new Label { Text = "Root:", Left = 10, Top = 25, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
             txtRoot = new TextBox { Left = 60, Top = 22, Width = 800, Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right };
-            btnBrowseRoot = new Button { Text = "Browse…", Left = 870, Top = 21, Width = 85, Anchor = AnchorStyles.Top | AnchorStyles.Right };
+            btnBrowseRoot = new Button { Text = "Browse...", Left = 870, Top = 21, Width = 85, Anchor = AnchorStyles.Top | AnchorStyles.Right };
             btnBrowseRoot.Click += (_, __) => PickRoot();
             var lblRangePrefix = new Label { Text = "Prefix:", Left = 10, Top = 60, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
             txtRangePrefix = new TextBox { Left = 60, Top = 57, Width = 150, Anchor = AnchorStyles.Top | AnchorStyles.Left };
@@ -429,7 +429,7 @@ namespace ManyCopy
             var lblEnd = new Label { Text = "End #:", Left = 380, Top = 60, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
             txtEnd = new TextBox { Left = 430, Top = 57, Width = 80, Anchor = AnchorStyles.Top | AnchorStyles.Left };
             chkCreateMissing = new CheckBox { Text = "Create missing folders", Left = 530, Top = 59, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
-            btnAddRange = new Button { Text = "Add Range →", Left = 760, Top = 56, Width = 195, Anchor = AnchorStyles.Top | AnchorStyles.Right };
+            btnAddRange = new Button { Text = "Add Range >>", Left = 760, Top = 56, Width = 195, Anchor = AnchorStyles.Top | AnchorStyles.Right };
             btnAddRange.Click += (_, __) => AddRangeToList();
 
             grpRange.Controls.AddRange(new Control[]
@@ -466,7 +466,7 @@ namespace ManyCopy
                     foreach (var p in paths.Where(Directory.Exists)) AddDestPath(p);
             };
 
-            btnBrowseDest = new Button { Text = "Browse…", Left = 885, Top = 255, Width = 90, Anchor = AnchorStyles.Top | AnchorStyles.Right };
+            btnBrowseDest = new Button { Text = "Browse...", Left = 885, Top = 255, Width = 90, Anchor = AnchorStyles.Top | AnchorStyles.Right };
             btnBrowseDest.Click += (_, __) => AddMultipleFolders();
 
             btnRemoveSel = new Button { Text = "Remove", Left = 885, Top = 290, Width = 90, Anchor = AnchorStyles.Top | AnchorStyles.Right };
@@ -691,7 +691,7 @@ namespace ManyCopy
                     else Log($"[PREVIEW] {p.destFile}" + (p.exists ? "  [will overwrite]" : ""));
                 }
                 Log($"[PREVIEW] Total targets: {planned.Count}, Overwrites: {willOverwrite}, Invalid: {invalid}");
-                Status($"Preview only • {planned.Count} targets • {willOverwrite} overwrites");
+                Status($"Preview only â€¢ {planned.Count} targets â€¢ {willOverwrite} overwrites");
                 return;
             }
 
@@ -750,7 +750,7 @@ namespace ManyCopy
             if (chkOverwrite.Checked && backedUp > 0)
                 Log("Note: Undo will restore backups and remove new copies where appropriate.");
 
-            Status($"Copied {copied} • Skipped {skipped} • Failed {failed} • Undo: {_undo.Count} Redo: {_redo.Count}");
+            Status($"Copied {copied} â€¢ Skipped {skipped} â€¢ Failed {failed} â€¢ Undo: {_undo.Count} Redo: {_redo.Count}");
         }
 
         private void DoUndo()
@@ -786,7 +786,7 @@ namespace ManyCopy
             _redo.Push(entry);
             UpdateUndoRedoButtons();
             Log($"Undo: Restored {restored}, Removed {removed}, Failed {failed}.");
-            Status($"Undid 1 step • Undo: {_undo.Count} Redo: {_redo.Count}");
+            Status($"Undid 1 step â€¢ Undo: {_undo.Count} Redo: {_redo.Count}");
         }
 
         private void DoRedo()
@@ -821,7 +821,7 @@ namespace ManyCopy
 
             PushUndo(entry);
             Log($"Redo: Copied {copied}, Skipped {skipped}, Failed {failed}. Backups created: {backedUp}.");
-            Status($"Redid 1 step • Undo: {_undo.Count} Redo: {_redo.Count}");
+            Status($"Redid 1 step â€¢ Undo: {_undo.Count} Redo: {_redo.Count}");
         }
 
         private void PushUndo(HistoryEntry entry)
@@ -1081,6 +1081,8 @@ namespace ManyCopy
         [Flags] private enum SIATTRIBFLAGS { SIATTRIBFLAGS_AND = 1, SIATTRIBFLAGS_OR = 2, SIATTRIBFLAGS_APPCOMPAT = 3 }
     }
 }
+
+
 
 
 
