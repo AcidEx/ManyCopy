@@ -448,7 +448,7 @@ namespace ManyCopy
                 Left = 10,
                 Top = 255,
                 Width = 860,
-                Height = 400,
+                Height = 360,
                 SelectionMode = SelectionMode.MultiExtended,
                 AllowDrop = true,
                 Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right
@@ -478,18 +478,18 @@ namespace ManyCopy
             Controls.AddRange(new Control[] { lblDest, listDest, btnBrowseDest, btnRemoveSel, btnClear });
 
             // Options
-                        chkOverwrite = new CheckBox { Text = "Overwrite if exists", Left = 10, Top = 670, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+                        chkOverwrite = new CheckBox { Text = "Overwrite if exists", Left = 10, Top = 650, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
 
             // Prefix mode: None / Fixed / Numbered
-            var lblPrefix = new Label { Text = "Prefix:", Left = 160, Top = 670, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
-            cmbPrefixMode = new ComboBox { Left = 210, Top = 666, Width = 90, DropDownStyle = ComboBoxStyle.DropDownList, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            var lblPrefix = new Label { Text = "Prefix:", Left = 160, Top = 650, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            cmbPrefixMode = new ComboBox { Left = 210, Top = 646, Width = 90, DropDownStyle = ComboBoxStyle.DropDownList, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
             cmbPrefixMode.Items.AddRange(new object[] { "None", "Fixed", "Numbered" });
             cmbPrefixMode.SelectedIndex = 0;
 
-            txtPrefix = new TextBox { Left = 310, Top = 667, Width = 120, Enabled = false, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
-            txtPrefixBase = new TextBox { Left = 310, Top = 667, Width = 100, Enabled = false, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
-            var lblStartNum = new Label { Text = "Start:", Left = 415, Top = 670, AutoSize = true, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
-            nudPrefixStart = new NumericUpDown { Left = 455, Top = 667, Width = 60, Minimum = 0, Maximum = 1_000_000, Value = 1, Enabled = false, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            txtPrefix = new TextBox { Left = 310, Top = 647, Width = 120, Enabled = false, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            txtPrefixBase = new TextBox { Left = 310, Top = 647, Width = 100, Enabled = false, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            var lblStartNum = new Label { Text = "Start:", Left = 415, Top = 650, AutoSize = true, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            nudPrefixStart = new NumericUpDown { Left = 455, Top = 647, Width = 60, Minimum = 0, Maximum = 1_000_000, Value = 1, Enabled = false, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
 
             cmbPrefixMode.SelectedIndexChanged += (_, __) =>
             {
@@ -501,15 +501,15 @@ namespace ManyCopy
             };
 
             // Suffix mode: None / Fixed / Numbered
-            var lblSuffix = new Label { Text = "Suffix:", Left = 530, Top = 670, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
-            cmbSuffixMode = new ComboBox { Left = 580, Top = 666, Width = 90, DropDownStyle = ComboBoxStyle.DropDownList, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            var lblSuffix = new Label { Text = "Suffix:", Left = 530, Top = 650, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            cmbSuffixMode = new ComboBox { Left = 580, Top = 646, Width = 90, DropDownStyle = ComboBoxStyle.DropDownList, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
             cmbSuffixMode.Items.AddRange(new object[] { "None", "Fixed", "Numbered" });
             cmbSuffixMode.SelectedIndex = 0;
 
-            txtSuffix = new TextBox { Left = 680, Top = 667, Width = 120, Enabled = false, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
-            txtSuffixBase = new TextBox { Left = 680, Top = 667, Width = 100, Enabled = false, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
-            var lblSuffixStart = new Label { Text = "Start:", Left = 785, Top = 670, AutoSize = true, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
-            nudSuffixStart = new NumericUpDown { Left = 825, Top = 667, Width = 60, Minimum = 0, Maximum = 1_000_000, Value = 1, Enabled = false, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            txtSuffix = new TextBox { Left = 680, Top = 647, Width = 120, Enabled = false, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            txtSuffixBase = new TextBox { Left = 680, Top = 647, Width = 100, Enabled = false, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            var lblSuffixStart = new Label { Text = "Start:", Left = 785, Top = 650, AutoSize = true, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            nudSuffixStart = new NumericUpDown { Left = 825, Top = 647, Width = 60, Minimum = 0, Maximum = 1_000_000, Value = 1, Enabled = false, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
 
             cmbSuffixMode.SelectedIndexChanged += (_, __) =>
             {
@@ -519,7 +519,7 @@ namespace ManyCopy
                 lblSuffixStart.Visible = (mode == 2); nudSuffixStart.Visible = (mode == 2); nudSuffixStart.Enabled = (mode == 2);
             };
 
-            chkPreview = new CheckBox { Text = "Preview mode", Left = 10, Top = 700, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            chkPreview = new CheckBox { Text = "Preview mode", Left = 10, Top = 680, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
 
             Controls.AddRange(new Control[]
             {
@@ -530,16 +530,16 @@ namespace ManyCopy
             });
 
             // Actions + log
-            btnUndo = new Button { Text = "Undo", Left = 610, Top = 696, Width = 90, Height = 32, Enabled = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Right };
+            btnUndo = new Button { Text = "Undo", Left = 610, Top = 676, Width = 90, Height = 32, Enabled = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Right };
             btnUndo.Click += (_, __) => DoUndo();
 
-            btnRedo = new Button { Text = "Redo", Left = 710, Top = 696, Width = 90, Height = 32, Enabled = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Right };
+            btnRedo = new Button { Text = "Redo", Left = 710, Top = 676, Width = 90, Height = 32, Enabled = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Right };
             btnRedo.Click += (_, __) => DoRedo();
 
-            btnEngage = new Button { Text = "Engage", Left = 810, Top = 694, Width = 120, Height = 36, Tag = "primary", Anchor = AnchorStyles.Bottom | AnchorStyles.Right };
+            btnEngage = new Button { Text = "Engage", Left = 810, Top = 674, Width = 120, Height = 36, Tag = "primary", Anchor = AnchorStyles.Bottom | AnchorStyles.Right };
             btnEngage.Click += (_, __) => RunCopyOrPreview();
 
-            lblStatus = new Label { Left = 10, Top = 730, AutoSize = true, Text = "Ready", Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            lblStatus = new Label { Left = 10, Top = 700, AutoSize = true, Text = "Ready", Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
 
             logBox = new TextBox
             {
@@ -853,7 +853,7 @@ namespace ManyCopy
         {
             if (logBox == null) return;
             int marginLeft = 10, marginRight = 10, marginBottom = 12;
-            int desiredHeight = 100; // default height for log box
+            int desiredHeight = 140; // default height for log box
 
             // Compute minimum top so it never overlaps the action buttons or status label
             int minTop = 0;
@@ -1061,5 +1061,6 @@ namespace ManyCopy
         [Flags] private enum SIATTRIBFLAGS { SIATTRIBFLAGS_AND = 1, SIATTRIBFLAGS_OR = 2, SIATTRIBFLAGS_APPCOMPAT = 3 }
     }
 }
+
 
 
