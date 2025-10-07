@@ -13,17 +13,18 @@ breakdown of recent updates.
 
 - Windows desktop. The WinForms UI relies on Windows-specific APIs.
 - [.NET SDK 8.0](https://dotnet.microsoft.com/en-us/download) with Windows
-  targeting enabled. The main project and the accompanying test project both
-  target `net8.0-windows`.
+  targeting enabled. The WinForms project targets `net8.0-windows` so it can
+  compile against the desktop APIs.
 
 ## Building the application
 
-Use the .NET CLI to restore dependencies and build the WinForms executable:
+From the repository root, use the .NET CLI to restore dependencies and build
+the WinForms executable:
 
 ```bash
 dotnet clean
 dotnet restore
-dotnet build ManyCopy.csproj
+dotnet build
 ```
 
 The `dotnet clean` step ensures old artifacts from previous builds are removed
@@ -40,21 +41,12 @@ opens.
 
 ## Running tests
 
-Unit tests live in the `ManyCopy.Tests` project. If `dotnet test` fails with an
-error similar to `dotnet: command not found`, install the .NET SDK so the
-`dotnet` CLI is available on your `PATH` before running the command below:
-
-```bash
-dotnet test ManyCopy.Tests/ManyCopy.Tests.csproj
-```
-
 ## Contributing
 
 Issues and pull requests are welcome! Before sending changes, please:
 
-1. Run the unit test suite (`dotnet test ManyCopy.Tests/ManyCopy.Tests.csproj`).
-2. Update `CHANGELOG.md` with a summary of your changes.
-3. Update this README when you add or modify user-facing functionality.
+1. Update `CHANGELOG.md` with a summary of your changes.
+2. Update this README when you add or modify user-facing functionality.
 
 ## License
 

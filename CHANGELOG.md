@@ -8,14 +8,17 @@ and uses [Semantic Versioning](https://semver.org/).
 
 ## [1.1.5] - 2024-05-05
 ### Changed
-- Retargeted the application and test projects to .NET 8.0 for compatibility
-  with the stable SDK and to unblock the failing test build.
+- Retargeted the application to .NET 8.0 for compatibility with the stable SDK
+  and to unblock the failing build.
 - Bumped the application metadata and UI labels to display version 1.1.5 on the
   splash screen and main window.
-- Expanded the README with build verification steps, including cleaning the
-  workspace before compiling and confirming the splash screen visuals after the
-  build.
+- Updated the README so building from the repository root (`dotnet build`) is
+  the default workflow and the .NET 8.0 dependency is clearly documented.
 - Added this changelog to make it easier to track user-facing updates.
+
+### Removed
+- The `ManyCopy.Tests` MSTest project, eliminating the package dependency that
+  was breaking `dotnet build` in clean environments.
 
 ## [1.1.4]
 ### Added
