@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
+using System.Reflection;
 using ManyCopy.Core;
 using Microsoft.Win32;
 
@@ -358,7 +359,7 @@ namespace ManyCopy
 
         public MainForm()
         {
-            Text = $"ManyCopy v1.1.5 â€” Copy Files to Many Folders";
+            { var info = typeof(Program).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? typeof(Program).Assembly.GetName().Version?.ToString() ?? ""; Text = $"ManyCopy v{info} - Copy Files to Many Folders"; }
             // Use the executable's icon for the window and taskbar
             try { this.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { }
             Width = 1000;
@@ -1081,6 +1082,7 @@ namespace ManyCopy
         [Flags] private enum SIATTRIBFLAGS { SIATTRIBFLAGS_AND = 1, SIATTRIBFLAGS_OR = 2, SIATTRIBFLAGS_APPCOMPAT = 3 }
     }
 }
+
 
 
 
