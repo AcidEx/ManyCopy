@@ -849,20 +849,33 @@ namespace ManyCopy
         }
 
         private void Log(string msg) => logBox.AppendText((msg ?? string.Empty) + Environment.NewLine);
-        private void LayoutBottom()
+                private void LayoutBottom()
         {
             if (logBox == null) return;
             int marginLeft = 10, marginRight = 10, marginBottom = 12;
-            int desiredHeight = 140; // default height for log box
+            int desiredHeight = 140; // larger default log area
 
-            // Compute minimum top so it never overlaps the action buttons or status label
-            int minTop = 0;
-            try { minTop = Math.Max(lblStatus?.Bottom ?? 0, Math.Max(btnUndo?.Bottom ?? 0, Math.Max(btnRedo?.Bottom ?? 0, btnEngage?.Bottom ?? 0))) + 10; }
-            catch { minTop = 700; }
+            // Determine the bottom of the bottom-row controls (buttons/preview/mode dropdowns)
+            int controlsBottom = 0;
+            try
+            {
+                controlsBottom = new int[]
+                {
+                    btnUndo?.Bottom ?? 0,
+                    btnRedo?.Bottom ?? 0,
+                    btnEngage?.Bottom ?? 0,
+                    chkPreview?.Bottom ?? 0,
+                    cmbPrefixMode?.Bottom ?? 0,
+                    cmbSuffixMode?.Bottom ?? 0
+                }.Max();
+            }
+            catch { controlsBottom = 700; }
 
             int clientW = this.ClientSize.Width;
             int clientH = this.ClientSize.Height;
 
+            // Log box should start below bottom controls with a small gap
+            int minTop = controlsBottom + 10;
             int width = Math.Max(100, clientW - marginLeft - marginRight);
             int top = Math.Max(minTop, clientH - marginBottom - desiredHeight);
             int height = Math.Max(50, clientH - marginBottom - top);
@@ -871,8 +884,15 @@ namespace ManyCopy
             logBox.Width = width;
             logBox.Top = top;
             logBox.Height = height;
-        }
-        private void Status(string msg) { lblStatus.Text = msg; }
+
+            // Place status label just above the log box, aligned left
+            if (lblStatus != null)
+            {
+                lblStatus.Left = marginLeft;
+                int labelTop = logBox.Top - lblStatus.Height - 6;
+                lblStatus.Top = Math.Max(controlsBottom + 2, labelTop);
+            }
+        }        private void Status(string msg) { lblStatus.Text = msg; }
 
         private string SettingsPath =>
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ManyCopy", "settings.txt");
@@ -1061,6 +1081,7 @@ namespace ManyCopy
         [Flags] private enum SIATTRIBFLAGS { SIATTRIBFLAGS_AND = 1, SIATTRIBFLAGS_OR = 2, SIATTRIBFLAGS_APPCOMPAT = 3 }
     }
 }
+
 
 
 
