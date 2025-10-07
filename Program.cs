@@ -1,10 +1,12 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
+using System.Reflection;
+using ManyCopy.Core;
 using Microsoft.Win32;
 
 namespace ManyCopy
@@ -49,6 +51,8 @@ namespace ManyCopy
 
         public SplashForm()
         {
+            AutoScaleMode = AutoScaleMode.Dpi;
+            AutoScaleDimensions = new SizeF(96f, 96f);
             FormBorderStyle = FormBorderStyle.None;
             StartPosition = FormStartPosition.CenterScreen;
             TopMost = true;
@@ -85,7 +89,7 @@ namespace ManyCopy
 
             Controls.Add(new Label
             {
-                Text = "v1.1.4",
+                Text = "v1.1.6",
                 ForeColor = Color.White,
                 Font = new Font("Segoe UI", 11f),
                 AutoSize = true,
@@ -322,14 +326,17 @@ namespace ManyCopy
         private Button btnRemoveSel = null!;
         private Button btnClear = null!;
 
-        private CheckBox chkOverwrite = null!;
-        private CheckBox chkUsePrefix = null!;
-        private TextBox txtPrefix = null!;
-        private CheckBox chkUsePrefixRange = null!;
-        private TextBox txtPrefixBase = null!;
-        private NumericUpDown nudPrefixStart = null!;
-        private CheckBox chkUseSuffix = null!;
-        private TextBox txtSuffix = null!;
+                private CheckBox chkOverwrite = null!;
+        // Prefix controls (mode dropdown replacing separate checkboxes)
+        private ComboBox cmbPrefixMode = null!; // 0=None, 1=Fixed, 2=Numbered
+        private TextBox txtPrefix = null!;      // Fixed prefix text
+        private TextBox txtPrefixBase = null!;  // Numbered prefix base
+        private NumericUpDown nudPrefixStart = null!; // Numbered prefix start
+        // Suffix controls (mode dropdown with fixed/numbered)
+        private ComboBox cmbSuffixMode = null!; // 0=None, 1=Fixed, 2=Numbered
+        private TextBox txtSuffix = null!;      // Fixed suffix text
+        private TextBox txtSuffixBase = null!;  // Numbered suffix base
+        private NumericUpDown nudSuffixStart = null!; // Numbered suffix start
         private CheckBox chkPreview = null!;
 
         private CheckBox chkEnableRange = null!;
@@ -354,7 +361,8 @@ namespace ManyCopy
 
         public MainForm()
         {
-            Text = $"ManyCopy v1.1.4 — Copy Files to Many Folders";
+            SuspendLayout();
+            { var info = typeof(Program).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? string.Empty; var shortInfo = info.Split('+','-',' ')[0]; if (Version.TryParse(shortInfo, out var v)) { shortInfo = v.Build >= 0 ? $"{v.Major}.{v.Minor}.{v.Build}" : $"{v.Major}.{v.Minor}"; if (shortInfo.EndsWith(".0")) shortInfo = shortInfo.TrimEnd('0').TrimEnd('.'); } if (string.IsNullOrWhiteSpace(shortInfo)) { shortInfo = typeof(Program).Assembly.GetName().Version?.ToString() ?? string.Empty; } Text = $"ManyCopy v{shortInfo} - Copy Files to Many Folders"; }
             // Use the executable's icon for the window and taskbar
             try { this.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { }
             Width = 1000;
@@ -392,7 +400,7 @@ namespace ManyCopy
             // Source row
             var lblSource = new Label { Text = "Source file:", Left = 10, Top = 50, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
             txtSource = new TextBox { Left = 95, Top = 47, Width = 780, AllowDrop = true, Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right };
-            btnBrowseSource = new Button { Text = "Browse…", Left = 885, Top = 46, Width = 90, Anchor = AnchorStyles.Top | AnchorStyles.Right };
+            btnBrowseSource = new Button { Text = "Browse...", Left = 885, Top = 46, Width = 90, Anchor = AnchorStyles.Top | AnchorStyles.Right };
             btnBrowseSource.Click += (_, __) => PickSource();
             txtSource.DragEnter += (s, e) =>
             {
@@ -416,7 +424,7 @@ namespace ManyCopy
             grpRange = new GroupBox { Text = "Range Helper", Left = 10, Top = 105, Width = 965, Height = 120, Visible = false, Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right };
             var lblRoot = new Label { Text = "Root:", Left = 10, Top = 25, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
             txtRoot = new TextBox { Left = 60, Top = 22, Width = 800, Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right };
-            btnBrowseRoot = new Button { Text = "Browse…", Left = 870, Top = 21, Width = 85, Anchor = AnchorStyles.Top | AnchorStyles.Right };
+            btnBrowseRoot = new Button { Text = "Browse...", Left = 870, Top = 21, Width = 85, Anchor = AnchorStyles.Top | AnchorStyles.Right };
             btnBrowseRoot.Click += (_, __) => PickRoot();
             var lblRangePrefix = new Label { Text = "Prefix:", Left = 10, Top = 60, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
             txtRangePrefix = new TextBox { Left = 60, Top = 57, Width = 150, Anchor = AnchorStyles.Top | AnchorStyles.Left };
@@ -425,7 +433,7 @@ namespace ManyCopy
             var lblEnd = new Label { Text = "End #:", Left = 380, Top = 60, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
             txtEnd = new TextBox { Left = 430, Top = 57, Width = 80, Anchor = AnchorStyles.Top | AnchorStyles.Left };
             chkCreateMissing = new CheckBox { Text = "Create missing folders", Left = 530, Top = 59, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
-            btnAddRange = new Button { Text = "Add Range →", Left = 760, Top = 56, Width = 195, Anchor = AnchorStyles.Top | AnchorStyles.Right };
+            btnAddRange = new Button { Text = "Add Range >>", Left = 760, Top = 56, Width = 195, Anchor = AnchorStyles.Top | AnchorStyles.Right };
             btnAddRange.Click += (_, __) => AddRangeToList();
 
             grpRange.Controls.AddRange(new Control[]
@@ -444,7 +452,7 @@ namespace ManyCopy
                 Left = 10,
                 Top = 255,
                 Width = 860,
-                Height = 400,
+                Height = 360,
                 SelectionMode = SelectionMode.MultiExtended,
                 AllowDrop = true,
                 Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right
@@ -462,7 +470,7 @@ namespace ManyCopy
                     foreach (var p in paths.Where(Directory.Exists)) AddDestPath(p);
             };
 
-            btnBrowseDest = new Button { Text = "Browse…", Left = 885, Top = 255, Width = 90, Anchor = AnchorStyles.Top | AnchorStyles.Right };
+            btnBrowseDest = new Button { Text = "Browse...", Left = 885, Top = 255, Width = 90, Anchor = AnchorStyles.Top | AnchorStyles.Right };
             btnBrowseDest.Click += (_, __) => AddMultipleFolders();
 
             btnRemoveSel = new Button { Text = "Remove", Left = 885, Top = 290, Width = 90, Anchor = AnchorStyles.Top | AnchorStyles.Right };
@@ -474,55 +482,68 @@ namespace ManyCopy
             Controls.AddRange(new Control[] { lblDest, listDest, btnBrowseDest, btnRemoveSel, btnClear });
 
             // Options
-            chkOverwrite = new CheckBox { Text = "Overwrite if exists", Left = 10, Top = 670, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+                        chkOverwrite = new CheckBox { Text = "Overwrite if exists", Left = 10, Top = 650, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
 
-            chkUsePrefix = new CheckBox { Text = "Fixed prefix", Left = 160, Top = 670, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
-            txtPrefix = new TextBox { Left = 255, Top = 667, Width = 140, Enabled = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
-            chkUsePrefix.CheckedChanged += (_, __) =>
+            // Prefix mode: None / Fixed / Numbered
+            var lblPrefix = new Label { Text = "Prefix:", Left = 160, Top = 650, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            cmbPrefixMode = new ComboBox { Left = 210, Top = 646, Width = 90, DropDownStyle = ComboBoxStyle.DropDownList, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            cmbPrefixMode.Items.AddRange(new object[] { "None", "Fixed", "Numbered" });
+            cmbPrefixMode.SelectedIndex = 0;
+
+            txtPrefix = new TextBox { Left = 310, Top = 647, Width = 120, Enabled = false, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            txtPrefixBase = new TextBox { Left = 310, Top = 647, Width = 100, Enabled = false, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            var lblStartNum = new Label { Text = "Start:", Left = 415, Top = 650, AutoSize = true, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            nudPrefixStart = new NumericUpDown { Left = 455, Top = 647, Width = 60, Minimum = 0, Maximum = 1_000_000, Value = 1, Enabled = false, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+
+            cmbPrefixMode.SelectedIndexChanged += (_, __) =>
             {
-                txtPrefix.Enabled = chkUsePrefix.Checked;
-                if (chkUsePrefix.Checked)
-                {
-                    chkUsePrefixRange.Checked = false;
-                    txtPrefixBase.Enabled = false; nudPrefixStart.Enabled = false;
-                }
+                var mode = cmbPrefixMode.SelectedIndex;
+                // Reset visibility
+                txtPrefix.Visible = (mode == 1); txtPrefix.Enabled = (mode == 1);
+                txtPrefixBase.Visible = (mode == 2); txtPrefixBase.Enabled = (mode == 2);
+                lblStartNum.Visible = (mode == 2); nudPrefixStart.Visible = (mode == 2); nudPrefixStart.Enabled = (mode == 2);
             };
 
-            chkUsePrefixRange = new CheckBox { Text = "Numbered prefix", Left = 405, Top = 670, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
-            txtPrefixBase = new TextBox { Left = 530, Top = 667, Width = 100, Enabled = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
-            var lblStartNum = new Label { Text = "Start:", Left = 635, Top = 670, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
-            nudPrefixStart = new NumericUpDown { Left = 675, Top = 667, Width = 70, Minimum = 0, Maximum = 1_000_000, Value = 1, Enabled = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
-            chkUsePrefixRange.CheckedChanged += (_, __) =>
+            // Suffix mode: None / Fixed / Numbered
+            var lblSuffix = new Label { Text = "Suffix:", Left = 530, Top = 650, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            cmbSuffixMode = new ComboBox { Left = 580, Top = 646, Width = 90, DropDownStyle = ComboBoxStyle.DropDownList, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            cmbSuffixMode.Items.AddRange(new object[] { "None", "Fixed", "Numbered" });
+            cmbSuffixMode.SelectedIndex = 0;
+
+            txtSuffix = new TextBox { Left = 680, Top = 647, Width = 120, Enabled = false, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            txtSuffixBase = new TextBox { Left = 680, Top = 647, Width = 100, Enabled = false, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            var lblSuffixStart = new Label { Text = "Start:", Left = 785, Top = 650, AutoSize = true, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            nudSuffixStart = new NumericUpDown { Left = 825, Top = 647, Width = 60, Minimum = 0, Maximum = 1_000_000, Value = 1, Enabled = false, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+
+            cmbSuffixMode.SelectedIndexChanged += (_, __) =>
             {
-                var on = chkUsePrefixRange.Checked;
-                txtPrefixBase.Enabled = on; nudPrefixStart.Enabled = on;
-                if (on) { chkUsePrefix.Checked = false; txtPrefix.Enabled = false; }
+                var mode = cmbSuffixMode.SelectedIndex;
+                txtSuffix.Visible = (mode == 1); txtSuffix.Enabled = (mode == 1);
+                txtSuffixBase.Visible = (mode == 2); txtSuffixBase.Enabled = (mode == 2);
+                lblSuffixStart.Visible = (mode == 2); nudSuffixStart.Visible = (mode == 2); nudSuffixStart.Enabled = (mode == 2);
             };
 
-            chkUseSuffix = new CheckBox { Text = "Suffix", Left = 760, Top = 670, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
-            txtSuffix = new TextBox { Left = 820, Top = 667, Width = 160, Enabled = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right };
-            chkUseSuffix.CheckedChanged += (_, __) => txtSuffix.Enabled = chkUseSuffix.Checked;
-
-            chkPreview = new CheckBox { Text = "Preview mode", Left = 10, Top = 700, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            chkPreview = new CheckBox { Text = "Preview mode", Left = 10, Top = 680, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
 
             Controls.AddRange(new Control[]
             {
-                chkOverwrite, chkUsePrefix, txtPrefix,
-                chkUsePrefixRange, txtPrefixBase, lblStartNum, nudPrefixStart,
-                chkUseSuffix, txtSuffix, chkPreview
+                chkOverwrite,
+                lblPrefix, cmbPrefixMode, txtPrefix, txtPrefixBase, lblStartNum, nudPrefixStart,
+                lblSuffix, cmbSuffixMode, txtSuffix, txtSuffixBase, lblSuffixStart, nudSuffixStart,
+                chkPreview
             });
 
             // Actions + log
-            btnUndo = new Button { Text = "Undo", Left = 610, Top = 696, Width = 90, Height = 32, Enabled = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Right };
+            btnUndo = new Button { Text = "Undo", Left = 610, Top = 676, Width = 90, Height = 32, Enabled = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Right };
             btnUndo.Click += (_, __) => DoUndo();
 
-            btnRedo = new Button { Text = "Redo", Left = 710, Top = 696, Width = 90, Height = 32, Enabled = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Right };
+            btnRedo = new Button { Text = "Redo", Left = 710, Top = 676, Width = 90, Height = 32, Enabled = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Right };
             btnRedo.Click += (_, __) => DoRedo();
 
-            btnEngage = new Button { Text = "Engage", Left = 810, Top = 694, Width = 120, Height = 36, Tag = "primary", Anchor = AnchorStyles.Bottom | AnchorStyles.Right };
+            btnEngage = new Button { Text = "Engage", Left = 810, Top = 674, Width = 120, Height = 36, Tag = "primary", Anchor = AnchorStyles.Bottom | AnchorStyles.Right };
             btnEngage.Click += (_, __) => RunCopyOrPreview();
 
-            lblStatus = new Label { Left = 10, Top = 730, AutoSize = true, Text = "Ready", Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            lblStatus = new Label { Left = 10, Top = 700, AutoSize = true, Text = "Ready", Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
 
             logBox = new TextBox
             {
@@ -537,6 +558,11 @@ namespace ManyCopy
             };
 
             Controls.AddRange(new Control[] { btnUndo, btnRedo, btnEngage, lblStatus, logBox });
+            // Ensure bottom log box stays within window bounds on resize
+            Layout += (_, __) => LayoutBottom();
+            Resize += (_, __) => LayoutBottom();
+            LayoutBottom();
+            ResumeLayout(true);
 
             // Theme on load
             var saved = LoadTheme();
@@ -568,14 +594,21 @@ namespace ManyCopy
             var prefix = (txtRangePrefix.Text ?? string.Empty).Trim();
             if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root)) { Log("ERROR: Destination root invalid."); return; }
             if (string.IsNullOrWhiteSpace(prefix)) { Log("ERROR: Range prefix is empty."); return; }
-            if (!int.TryParse((txtStart.Text ?? "").Trim(), out var start) ||
-                !int.TryParse((txtEnd.Text ?? "").Trim(), out var end)) { Log("ERROR: Start/End must be whole numbers."); return; }
+
+            var startText = (txtStart.Text ?? string.Empty).Trim();
+            var endText = (txtEnd.Text ?? string.Empty).Trim();
+
+            if (!int.TryParse(startText, out var start) ||
+                !int.TryParse(endText, out var end)) { Log("ERROR: Start/End must be whole numbers."); return; }
             if (start > end) { Log("ERROR: Start number greater than end number."); return; }
+
+            int padWidth = NamingHelpers.CalculateRangePadWidth(startText, endText);
 
             int added = 0, created = 0;
             for (int i = start; i <= end; i++)
             {
-                var folder = Path.Combine(root, $"{prefix}{i}");
+                string number = NamingHelpers.FormatRangeNumber(i, padWidth);
+                var folder = Path.Combine(root, $"{prefix}{number}");
                 if (!Directory.Exists(folder))
                 {
                     if (chkCreateMissing.Checked)
@@ -587,7 +620,7 @@ namespace ManyCopy
                 }
                 AddDestPath(folder); added++;
             }
-            Log($"Range added: {added} folders. Created new: {created}");
+            Log($"Range added: {added} folders. Created new folders: {created}");
         }
 
         private void AddMultipleFolders()
@@ -617,15 +650,22 @@ namespace ManyCopy
             if (string.IsNullOrWhiteSpace(src) || !File.Exists(src)) { Log("ERROR: Source file not found."); return; }
             if (listDest.Items.Count == 0) { Log("ERROR: No destinations selected."); return; }
 
-            bool useFixed = chkUsePrefix.Checked && !string.IsNullOrWhiteSpace(txtPrefix.Text);
-            bool useRange = chkUsePrefixRange.Checked && !string.IsNullOrWhiteSpace(txtPrefixBase.Text);
-            bool useSuffix = chkUseSuffix.Checked && !string.IsNullOrWhiteSpace(txtSuffix.Text);
+                        int prefixMode = cmbPrefixMode.SelectedIndex; // 0=None,1=Fixed,2=Numbered
+            int suffixMode = cmbSuffixMode.SelectedIndex; // 0=None,1=Fixed,2=Numbered
 
-            if (chkUsePrefix.Checked && string.IsNullOrWhiteSpace(txtPrefix.Text)) { Log("ERROR: Fixed prefix enabled but empty."); return; }
-            if (chkUsePrefixRange.Checked && string.IsNullOrWhiteSpace(txtPrefixBase.Text)) { Log("ERROR: Numbered prefix enabled but base is empty."); return; }
-            if (chkUseSuffix.Checked && string.IsNullOrWhiteSpace(txtSuffix.Text)) { Log("ERROR: Suffix enabled but empty."); return; }
+            bool useFixed = (prefixMode == 1) && !string.IsNullOrWhiteSpace(txtPrefix.Text);
+            bool useRange = (prefixMode == 2) && !string.IsNullOrWhiteSpace(txtPrefixBase.Text);
 
-            int idx = (int)nudPrefixStart.Value;
+            bool useSuffixFixed = (suffixMode == 1) && !string.IsNullOrWhiteSpace(txtSuffix.Text);
+            bool useSuffixRange = (suffixMode == 2) && !string.IsNullOrWhiteSpace(txtSuffixBase.Text);
+
+            if (prefixMode == 1 && string.IsNullOrWhiteSpace(txtPrefix.Text)) { Log("ERROR: Fixed prefix enabled but empty."); return; }
+            if (prefixMode == 2 && string.IsNullOrWhiteSpace(txtPrefixBase.Text)) { Log("ERROR: Numbered prefix enabled but base is empty."); return; }
+            if (suffixMode == 1 && string.IsNullOrWhiteSpace(txtSuffix.Text)) { Log("ERROR: Suffix enabled but empty."); return; }
+            if (suffixMode == 2 && string.IsNullOrWhiteSpace(txtSuffixBase.Text)) { Log("ERROR: Numbered suffix enabled but base is empty."); return; }
+
+            int idxPrefix = (int)nudPrefixStart.Value;
+            int idxSuffix = (int)nudSuffixStart.Value;
             string baseName = Path.GetFileName(src);
 
             var planned = new List<(string folder, string destFile, bool exists)>();
@@ -638,11 +678,11 @@ namespace ManyCopy
                     continue;
                 }
 
-                string finalName = BuildTargetName(baseName, useFixed, txtPrefix.Text, useRange, txtPrefixBase.Text, idx, useSuffix, txtSuffix.Text);
+                string finalName = NamingHelpers.BuildTargetName(baseName, useFixed, txtPrefix.Text, useRange, txtPrefixBase.Text, idxPrefix, (useSuffixFixed || useSuffixRange), (useSuffixRange ? (txtSuffixBase.Text + idxSuffix.ToString()) : txtSuffix.Text));
                 var dest = Path.Combine(folder, finalName);
 
                 planned.Add((folder, dest, File.Exists(dest)));
-                if (useRange) idx++;
+                if (useRange) idxPrefix++; if (useSuffixRange) idxSuffix++;
             }
 
             if (chkPreview.Checked)
@@ -656,7 +696,7 @@ namespace ManyCopy
                     else Log($"[PREVIEW] {p.destFile}" + (p.exists ? "  [will overwrite]" : ""));
                 }
                 Log($"[PREVIEW] Total targets: {planned.Count}, Overwrites: {willOverwrite}, Invalid: {invalid}");
-                Status($"Preview only • {planned.Count} targets • {willOverwrite} overwrites");
+                Status($"Preview only â€¢ {planned.Count} targets â€¢ {willOverwrite} overwrites");
                 return;
             }
 
@@ -715,25 +755,7 @@ namespace ManyCopy
             if (chkOverwrite.Checked && backedUp > 0)
                 Log("Note: Undo will restore backups and remove new copies where appropriate.");
 
-            Status($"Copied {copied} • Skipped {skipped} • Failed {failed} • Undo:{_undo.Count} Redo:{_redo.Count}");
-        }
-
-        private static string BuildTargetName(
-            string baseName,
-            bool useFixed, string? fixedPrefix,
-            bool useRange, string? rangeBase, int index,
-            bool useSuffix, string? suffix)
-        {
-            string prefixPart = "";
-            if (useRange) prefixPart = (rangeBase ?? "").Trim() + index.ToString();
-            else if (useFixed) prefixPart = (fixedPrefix ?? "").Trim();
-
-            string nameNoExt = Path.GetFileNameWithoutExtension(baseName);
-            string ext = Path.GetExtension(baseName);
-            string suffixPart = useSuffix ? (suffix ?? "").Trim() : "";
-            if (!string.IsNullOrEmpty(suffixPart)) nameNoExt += suffixPart;
-
-            return prefixPart + nameNoExt + ext;
+            Status($"Copied {copied} â€¢ Skipped {skipped} â€¢ Failed {failed} â€¢ Undo: {_undo.Count} Redo: {_redo.Count}");
         }
 
         private void DoUndo()
@@ -769,7 +791,7 @@ namespace ManyCopy
             _redo.Push(entry);
             UpdateUndoRedoButtons();
             Log($"Undo: Restored {restored}, Removed {removed}, Failed {failed}.");
-            Status($"Undid 1 step • Undo:{_undo.Count} Redo:{_redo.Count}");
+            Status($"Undid 1 step â€¢ Undo: {_undo.Count} Redo: {_redo.Count}");
         }
 
         private void DoRedo()
@@ -804,13 +826,24 @@ namespace ManyCopy
 
             PushUndo(entry);
             Log($"Redo: Copied {copied}, Skipped {skipped}, Failed {failed}. Backups created: {backedUp}.");
-            Status($"Redid 1 step • Undo:{_undo.Count} Redo:{_redo.Count}");
+            Status($"Redid 1 step â€¢ Undo: {_undo.Count} Redo: {_redo.Count}");
         }
 
         private void PushUndo(HistoryEntry entry)
         {
             _undo.Push(entry);
-            while (_undo.Count > HistoryCap) _undo.TrimExcess();
+
+            if (_undo.Count > HistoryCap)
+            {
+                var buffer = _undo.ToArray(); // newest-first ordering
+                _undo.Clear();
+                var limit = Math.Min(buffer.Length, HistoryCap);
+                for (int i = limit - 1; i >= 0; i--)
+                {
+                    _undo.Push(buffer[i]);
+                }
+            }
+
             UpdateUndoRedoButtons();
         }
 
@@ -821,7 +854,50 @@ namespace ManyCopy
         }
 
         private void Log(string msg) => logBox.AppendText((msg ?? string.Empty) + Environment.NewLine);
-        private void Status(string msg) { lblStatus.Text = msg; }
+                private void LayoutBottom()
+        {
+            if (logBox == null) return;
+            int marginLeft = 10, marginRight = 10, marginBottom = 12;
+            int desiredHeight = 140; // larger default log area
+
+            // Determine the bottom of the bottom-row controls (buttons/preview/mode dropdowns)
+            int controlsBottom = 0;
+            try
+            {
+                controlsBottom = new int[]
+                {
+                    btnUndo?.Bottom ?? 0,
+                    btnRedo?.Bottom ?? 0,
+                    btnEngage?.Bottom ?? 0,
+                    chkPreview?.Bottom ?? 0,
+                    cmbPrefixMode?.Bottom ?? 0,
+                    cmbSuffixMode?.Bottom ?? 0
+                }.Max();
+            }
+            catch { controlsBottom = 700; }
+
+            int clientW = this.ClientSize.Width;
+            int clientH = this.ClientSize.Height;
+
+            // Log box should start below bottom controls with a small gap
+            int minTop = controlsBottom + 10;
+            int width = Math.Max(100, clientW - marginLeft - marginRight);
+            int top = Math.Max(minTop, clientH - marginBottom - desiredHeight);
+            int height = Math.Max(50, clientH - marginBottom - top);
+
+            logBox.Left = marginLeft;
+            logBox.Width = width;
+            logBox.Top = top;
+            logBox.Height = height;
+
+            // Place status label just above the log box, aligned left
+            if (lblStatus != null)
+            {
+                lblStatus.Left = marginLeft;
+                int labelTop = logBox.Top - lblStatus.Height - 6;
+                lblStatus.Top = Math.Max(controlsBottom + 2, labelTop);
+            }
+        }        private void Status(string msg) { lblStatus.Text = msg; }
 
         private string SettingsPath =>
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ManyCopy", "settings.txt");
@@ -850,6 +926,13 @@ namespace ManyCopy
             catch { }
             return ThemeMode.Auto;
         }
+    
+        protected override void OnDpiChanged(DpiChangedEventArgs e)
+        {
+            base.OnDpiChanged(e);
+            try { PerformAutoScale(); LayoutBottom(); Invalidate(true); } catch { }
+        }
+
     }
 
     // ---------- Models ----------
@@ -1010,3 +1093,15 @@ namespace ManyCopy
         [Flags] private enum SIATTRIBFLAGS { SIATTRIBFLAGS_AND = 1, SIATTRIBFLAGS_OR = 2, SIATTRIBFLAGS_APPCOMPAT = 3 }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+

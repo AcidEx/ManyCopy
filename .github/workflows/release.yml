@@ -1,0 +1,76 @@
+﻿name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Restore
+        shell: pwsh
+        run: dotnet restore
+      - name: Publish (Release)
+        shell: pwsh
+        run: dotnet publish ManyCopy.csproj -c Release -r win-x64 -p:SelfContained=true -p:PublishSingleFile=true -p:PublishTrimmed=false --nologo
+      - name: Code sign (optional)
+        shell: pwsh
+        env:
+          CODESIGN_PFX_BASE64: ${{ secrets.CODESIGN_PFX_BASE64 }}
+          CODESIGN_PFX_PASSWORD: ${{ secrets.CODESIGN_PFX_PASSWORD }}
+          CODESIGN_SUBJECT: ${{ secrets.CODESIGN_SUBJECT }}
+        run: |
+          $pub = Join-Path $pwd 'bin/Release/net8.0-windows/win-x64/publish'
+          $exe = Join-Path $pub 'ManyCopy.exe'
+          if ($env:CODESIGN_PFX_BASE64 -and $env:CODESIGN_PFX_PASSWORD) {
+            Write-Host 'Importing code signing certificate from secrets...'
+            $pfxPath = Join-Path $env:USERPROFILE 'codesign.pfx'
+            [IO.File]::WriteAllBytes($pfxPath, [Convert]::FromBase64String($env:CODESIGN_PFX_BASE64))
+            $pwd = ConvertTo-SecureString $env:CODESIGN_PFX_PASSWORD -AsPlainText -Force
+            $import = Import-PfxCertificate -FilePath $pfxPath -CertStoreLocation Cert:\CurrentUser\My -Password $pwd
+            if (-not $import) { throw 'Failed to import code signing certificate' }
+            $subject = if ($env:CODESIGN_SUBJECT) { $env:CODESIGN_SUBJECT } else { $import.Subject }
+            Write-Host "Signing $exe with subject: $subject"
+            powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\sign.ps1 -File $exe -Subject $subject
+          } else {
+            Write-Host 'No codesigning secrets provided; skipping signing.'
+          }
+      - name: Compute checksum
+        shell: pwsh
+        run: |
+          $pub = Join-Path $pwd 'bin/Release/net8.0-windows/win-x64/publish'
+          $exe = Join-Path $pub 'ManyCopy.exe'
+          $hash = Get-FileHash -Algorithm SHA256 -Path $exe
+          Set-Content -Path (Join-Path $pub 'ManyCopy.exe.sha256') -Value ("{0} *ManyCopy.exe" -f $hash.Hash) -Encoding ASCII
+      - name: Create zip
+        shell: pwsh
+        run: |
+          $pub = Join-Path $pwd 'bin/Release/net8.0-windows/win-x64/publish'
+          $exe = Join-Path $pub 'ManyCopy.exe'
+          $sha = Join-Path $pub 'ManyCopy.exe.sha256'
+          $ver = (Select-String -Path 'ManyCopy.csproj' -Pattern '<Version>(.*?)</Version>').Matches.Groups[1].Value
+          if (-not $ver) { $ver = '1.1.6.1' }
+          $zip = Join-Path $pub ("ManyCopy-$ver-win-x64.zip")
+          if (Test-Path $zip) { Remove-Item $zip -Force }
+          Compress-Archive -LiteralPath $exe,$sha -DestinationPath $zip -Force
+      - name: Upload Release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: false
+          files: |
+            bin/Release/net8.0-windows/win-x64/publish/ManyCopy-*-win-x64.zip
+            bin/Release/net8.0-windows/win-x64/publish/ManyCopy.exe
+            bin/Release/net8.0-windows/win-x64/publish/ManyCopy.exe.sha256
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
