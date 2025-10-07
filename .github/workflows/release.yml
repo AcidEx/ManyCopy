@@ -19,44 +19,18 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
-      - name: Prepare
-        shell: pwsh
-        run: |
-          dotnet --info
-          # Normalize Program.cs newlines if any literal CRLFs leaked
-          $p = 'Program.cs'
-          if (Test-Path $p) {
-            $raw = Get-Content $p -Raw
-            $fixed = $raw -replace '\r\n', "`r`n"
-            if ($fixed -ne $raw) { Set-Content $p -Value $fixed -Encoding UTF8 }
-          }
-          # Validate csproj loads as XML
-          [xml](Get-Content 'ManyCopy.csproj' -Raw) | Out-Null
       - name: Restore
         shell: pwsh
         run: dotnet restore
       - name: Publish (Release)
         shell: pwsh
-        run: |
-          dotnet publish ManyCopy.csproj -c Release -r win-x64 -p:SelfContained=true -p:PublishSingleFile=true -p:PublishTrimmed=false --nologo
+        run: dotnet publish ManyCopy.csproj -c Release -r win-x64 -p:SelfContained=true -p:PublishSingleFile=true -p:PublishTrimmed=false --nologo
       - name: Compute checksum
         shell: pwsh
-        run: |
-          $pub = Join-Path $pwd 'bin/Release/net8.0-windows/win-x64/publish'
-          $exe = Join-Path $pub 'ManyCopy.exe'
-          $hash = Get-FileHash -Algorithm SHA256 -Path $exe
-          Set-Content -Path (Join-Path $pub 'ManyCopy.exe.sha256') -Value ("{0} *ManyCopy.exe" -f $hash.Hash) -Encoding ASCII
+        run: $pub=Join-Path $pwd 'bin/Release/net8.0-windows/win-x64/publish'; $exe=Join-Path $pub 'ManyCopy.exe'; $hash=Get-FileHash -Algorithm SHA256 -Path $exe; Set-Content -Path (Join-Path $pub 'ManyCopy.exe.sha256') -Value ("{0} *ManyCopy.exe" -f $hash.Hash) -Encoding ASCII
       - name: Create zip
         shell: pwsh
-        run: |
-          $pub = Join-Path $pwd 'bin/Release/net8.0-windows/win-x64/publish'
-          $exe = Join-Path $pub 'ManyCopy.exe'
-          $sha = Join-Path $pub 'ManyCopy.exe.sha256'
-          $ver = (Select-String -Path 'ManyCopy.csproj' -Pattern '<Version>(.*?)</Version>').Matches.Groups[1].Value
-          if (-not $ver) { $ver = '1.1.6' }
-          $zip = Join-Path $pub ("ManyCopy-$ver-win-x64.zip")
-          if (Test-Path $zip) { Remove-Item $zip -Force }
-          Compress-Archive -LiteralPath $exe,$sha -DestinationPath $zip -Force
+        run: $pub=Join-Path $pwd 'bin/Release/net8.0-windows/win-x64/publish'; $exe=Join-Path $pub 'ManyCopy.exe'; $sha=Join-Path $pub 'ManyCopy.exe.sha256'; $ver=((Select-String -Path 'ManyCopy.csproj' -Pattern '<Version>(.*?)</Version>').Matches.Groups[1].Value); if (-not $ver) { $ver='1.1.6' }; $zip=Join-Path $pub ("ManyCopy-$ver-win-x64.zip"); if (Test-Path $zip) { Remove-Item $zip -Force }; Compress-Archive -LiteralPath $exe,$sha -DestinationPath $zip -Force
       - name: Upload Release
         uses: softprops/action-gh-release@v2
         with:
