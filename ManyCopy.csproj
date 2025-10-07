@@ -1,54 +1,50 @@
-<Project Sdk="Microsoft.NET.Sdk">
-
-	<PropertyGroup>
-		<!-- Target .NET and Windows desktop -->
-		<TargetFramework>net9.0-windows</TargetFramework>
-		<UseWindowsForms>true</UseWindowsForms>
-		<EnableWindowsTargeting>true</EnableWindowsTargeting>
-		<OutputType>WinExe</OutputType>
-
-		<!-- Identity / Version -->
-		<AssemblyName>ManyCopy</AssemblyName>
-		<RootNamespace>ManyCopy</RootNamespace>
-		<Nullable>enable</Nullable>
-		<ImplicitUsings>enable</ImplicitUsings>
-		<AssemblyVersion>1.1.4.0</AssemblyVersion>
-		<FileVersion>1.1.4.0</FileVersion>
-		<InformationalVersion>1.1.4</InformationalVersion>
-		<Version>1.1.4</Version>
-
-		<!-- Single-file, self-contained publish (only the .exe) -->
-		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
-		<SelfContained>true</SelfContained>
-		<PublishSingleFile>true</PublishSingleFile>
-		<IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
-		<EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
-		<PublishReadyToRun>true</PublishReadyToRun>
-		<PublishTrimmed>false</PublishTrimmed>
-		<!-- keep COM interop safe -->
-
-		<!-- Eliminate extra outputs (DLLs/PDB/XML) in build/publish -->
-		<DebugType>none</DebugType>
-		<GenerateDocumentationFile>false</GenerateDocumentationFile>
-		<ProduceReferenceAssembly>false</ProduceReferenceAssembly>
-		<CopyOutputSymbolsToOutputDirectory>false</CopyOutputSymbolsToOutputDirectory>
-		<CopyOutputSymbolsToPublishDirectory>false</CopyOutputSymbolsToPublishDirectory>
-
-		<!-- Platform -->
-		<Platforms>x64</Platforms>
-		<Prefer32Bit>false</Prefer32Bit>
-
-		<!-- App icon compiled into the EXE -->
-		<ApplicationIcon>Assets\ManyCopy.ico</ApplicationIcon>
-	</PropertyGroup>
-
-	<!-- Embed splash.png inside the EXE so TryLoadSplashImage() can find it as a resource -->
-	<ItemGroup>
-		<EmbeddedResource Include="Assets\splash.png">
-			<!-- Logical name ends with 'splash.png' so your code's EndsWith("splash.png") matches -->
-			<LogicalName>Assets.splash.png</LogicalName>
-		</EmbeddedResource>
-	</ItemGroup>
-
-	<!-- IMPORTANT: No <Content Include="Assets\**\*"> here, so nothing gets copied next to the EXE -->
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <OutputType>WinExe</OutputType>
+    <AssemblyName>ManyCopy</AssemblyName>
+    <RootNamespace>ManyCopy</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyVersion>1.1.6.0</AssemblyVersion>
+    <FileVersion>1.1.6.1</FileVersion>
+    <InformationalVersion>1.1.6.1</InformationalVersion>
+    <Version>1.1.6.1</Version>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <PublishTrimmed>false</PublishTrimmed>
+    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+    <DebugType>none</DebugType>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
+    <CopyOutputSymbolsToOutputDirectory>false</CopyOutputSymbolsToOutputDirectory>
+    <CopyOutputSymbolsToPublishDirectory>false</CopyOutputSymbolsToPublishDirectory>
+    <Platforms>x64</Platforms>
+    <Prefer32Bit>false</Prefer32Bit>
+    <ApplicationIcon>Assets\\ManyCopy.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Assets\\splash.png">
+      <LogicalName>Assets.splash.png</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="ManyCopy.Core/ManyCopy.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="tests\\**\\*.cs" />
+    <EmbeddedResource Remove="tests\\**\\*" />
+    <None Remove="tests\\**\\*" />
+    <Compile Remove="ManyCopy.Core\\**\\*.cs" />
+    <EmbeddedResource Remove="ManyCopy.Core\\**\\*" />
+    <None Remove="ManyCopy.Core\\**\\*" />
+  </ItemGroup>
 </Project>
