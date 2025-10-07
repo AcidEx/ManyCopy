@@ -24,6 +24,28 @@ jobs:
       - name: Publish (Release)
         shell: pwsh
         run: dotnet publish ManyCopy.csproj -c Release -r win-x64 -p:SelfContained=true -p:PublishSingleFile=true -p:PublishTrimmed=false --nologo
+      - name: Code sign (optional)
+        shell: pwsh
+        env:
+          CODESIGN_PFX_BASE64: ${{ secrets.CODESIGN_PFX_BASE64 }}
+          CODESIGN_PFX_PASSWORD: ${{ secrets.CODESIGN_PFX_PASSWORD }}
+          CODESIGN_SUBJECT: ${{ secrets.CODESIGN_SUBJECT }}
+        run: |
+          $pub = Join-Path $pwd 'bin/Release/net8.0-windows/win-x64/publish'
+          $exe = Join-Path $pub 'ManyCopy.exe'
+          if ($env:CODESIGN_PFX_BASE64 -and $env:CODESIGN_PFX_PASSWORD) {
+            Write-Host 'Importing code signing certificate from secrets...'
+            $pfxPath = Join-Path $env:USERPROFILE 'codesign.pfx'
+            [IO.File]::WriteAllBytes($pfxPath, [Convert]::FromBase64String($env:CODESIGN_PFX_BASE64))
+            $pwd = ConvertTo-SecureString $env:CODESIGN_PFX_PASSWORD -AsPlainText -Force
+            $import = Import-PfxCertificate -FilePath $pfxPath -CertStoreLocation Cert:\CurrentUser\My -Password $pwd
+            if (-not $import) { throw 'Failed to import code signing certificate' }
+            $subject = if ($env:CODESIGN_SUBJECT) { $env:CODESIGN_SUBJECT } else { $import.Subject }
+            Write-Host "Signing $exe with subject: $subject"
+            powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\sign.ps1 -File $exe -Subject $subject
+          } else {
+            Write-Host 'No codesigning secrets provided; skipping signing.'
+          }
       - name: Compute checksum
         shell: pwsh
         run: |
