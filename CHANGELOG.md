@@ -6,6 +6,11 @@ and uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.1.6.1] - 2025-10-07
+### Fixed
+- Rebuilt self-contained Windows x64 executable and verified tests.
+- Updated version metadata and README to 1.1.6.1.
+
 ## [1.1.6] - 2025-10-07
 ### Fixed
 - Updated CI to use the .NET 8 SDK and removed the unused extra test

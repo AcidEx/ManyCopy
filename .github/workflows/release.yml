@@ -37,7 +37,9 @@ jobs:
           $pub = Join-Path $pwd 'bin/Release/net8.0-windows/win-x64/publish'
           $exe = Join-Path $pub 'ManyCopy.exe'
           $sha = Join-Path $pub 'ManyCopy.exe.sha256'
-          $zip = Join-Path $pub 'ManyCopy-1.1.6-win-x64.zip'
+          $ver = (Select-String -Path 'ManyCopy.csproj' -Pattern '<Version>(.*?)</Version>').Matches.Groups[1].Value
+          if (-not $ver) { $ver = '1.1.6.1' }
+          $zip = Join-Path $pub ("ManyCopy-$ver-win-x64.zip")
           if (Test-Path $zip) { Remove-Item $zip -Force }
           Compress-Archive -LiteralPath $exe,$sha -DestinationPath $zip -Force
       - name: Upload Release
