@@ -10,11 +10,13 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.0.x'
-      - run: dotnet restore
-      - run: dotnet build -c Release --no-restore
-      - run: dotnet test -c Release --no-build || echo "no tests found"
-        shell: cmd
-      - run: dotnet publish ManyCopy.csproj -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:IncludeAllContentForSelfExtract=true /p:DebugType=None /p:DebugSymbols=false
+      - run: dotnet restore ManyCopy.csproj
+      - run: dotnet restore tests/ManyCopy.Tests/ManyCopy.Tests.csproj
+      - run: dotnet build ManyCopy.csproj -c Release --no-restore
+      - run: dotnet build tests/ManyCopy.Tests/ManyCopy.Tests.csproj -c Release --no-restore
+      - run: dotnet test tests/ManyCopy.Tests/ManyCopy.Tests.csproj -c Release --no-build
+        shell: pwsh
+      - run: dotnet publish ManyCopy.csproj -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:IncludeAllContentForSelfExtract=true /p:DebugType=None /p:DebugSymbols=false --no-build
       - uses: actions/upload-artifact@v4
         with:
           name: ManyCopy-win-x64

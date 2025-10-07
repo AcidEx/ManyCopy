@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
+using ManyCopy.Core;
 using Microsoft.Win32;
 
 namespace ManyCopy
@@ -576,12 +577,12 @@ namespace ManyCopy
                 !int.TryParse(endText, out var end)) { Log("ERROR: Start/End must be whole numbers."); return; }
             if (start > end) { Log("ERROR: Start number greater than end number."); return; }
 
-            int padWidth = CalculateRangePadWidth(startText, endText);
+            int padWidth = NamingHelpers.CalculateRangePadWidth(startText, endText);
 
             int added = 0, created = 0;
             for (int i = start; i <= end; i++)
             {
-                string number = FormatRangeNumber(i, padWidth);
+                string number = NamingHelpers.FormatRangeNumber(i, padWidth);
                 var folder = Path.Combine(root, $"{prefix}{number}");
                 if (!Directory.Exists(folder))
                 {
@@ -645,7 +646,7 @@ namespace ManyCopy
                     continue;
                 }
 
-                string finalName = BuildTargetName(baseName, useFixed, txtPrefix.Text, useRange, txtPrefixBase.Text, idx, useSuffix, txtSuffix.Text);
+                string finalName = NamingHelpers.BuildTargetName(baseName, useFixed, txtPrefix.Text, useRange, txtPrefixBase.Text, idx, useSuffix, txtSuffix.Text);
                 var dest = Path.Combine(folder, finalName);
 
                 planned.Add((folder, dest, File.Exists(dest)));
@@ -723,56 +724,6 @@ namespace ManyCopy
                 Log("Note: Undo will restore backups and remove new copies where appropriate.");
 
             Status($"Copied {copied} • Skipped {skipped} • Failed {failed} • Undo: {_undo.Count} Redo: {_redo.Count}");
-        }
-
-        private static int CalculateRangePadWidth(string startText, string endText)
-        {
-            static int WidthFrom(string text)
-            {
-                if (string.IsNullOrWhiteSpace(text)) return 0;
-                var trimmed = text.Trim();
-                if (trimmed.Length == 0) return 0;
-
-                bool negative = trimmed[0] == '-' || trimmed[0] == '+';
-                if (negative)
-                {
-                    trimmed = trimmed[1..];
-                }
-
-                if (trimmed.Length <= 1) return 0;
-                if (!trimmed.All(char.IsDigit)) return 0;
-                if (trimmed[0] != '0') return 0;
-
-                return trimmed.Length;
-            }
-
-            return Math.Max(WidthFrom(startText), WidthFrom(endText));
-        }
-
-        private static string FormatRangeNumber(int value, int padWidth)
-        {
-            if (padWidth > 0)
-                return value.ToString($"D{padWidth}");
-
-            return value.ToString();
-        }
-
-        private static string BuildTargetName(
-            string baseName,
-            bool useFixed, string? fixedPrefix,
-            bool useRange, string? rangeBase, int index,
-            bool useSuffix, string? suffix)
-        {
-            string prefixPart = "";
-            if (useRange) prefixPart = (rangeBase ?? "").Trim() + index.ToString();
-            else if (useFixed) prefixPart = (fixedPrefix ?? "").Trim();
-
-            string nameNoExt = Path.GetFileNameWithoutExtension(baseName);
-            string ext = Path.GetExtension(baseName);
-            string suffixPart = useSuffix ? (suffix ?? "").Trim() : "";
-            if (!string.IsNullOrEmpty(suffixPart)) nameNoExt += suffixPart;
-
-            return prefixPart + nameNoExt + ext;
         }
 
         private void DoUndo()

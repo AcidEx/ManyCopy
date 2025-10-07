@@ -48,5 +48,9 @@
 		</EmbeddedResource>
 	</ItemGroup>
 
-	<!-- IMPORTANT: No <Content Include="Assets\**\*"> here, so nothing gets copied next to the EXE -->
+        <!-- IMPORTANT: No <Content Include="Assets\**\*"> here, so nothing gets copied next to the EXE -->
+
+        <ItemGroup>
+                <ProjectReference Include="ManyCopy.Core/ManyCopy.Core.csproj" />
+        </ItemGroup>
 </Project>
