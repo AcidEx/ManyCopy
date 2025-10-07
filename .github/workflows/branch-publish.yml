@@ -3,7 +3,7 @@
 on:
   push:
     branches:
-      - "release/1.1.6"
+      - release/1.1.6
 
 jobs:
   publish:
@@ -15,23 +15,27 @@ jobs:
       - name: Setup .NET SDK 8.x
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
-      
+          dotnet-version: 8.0.x
+      - name: Dotnet info
+        shell: pwsh
+        run: dotnet --info
       - name: Show Program.cs head
         shell: pwsh
         run: |
           Get-Content Program.cs -TotalCount 80
-            - name: Normalize Program.cs newlines
+      - name: Normalize Program.cs newlines
         shell: pwsh
         run: |
           $p = 'Program.cs'
           $raw = Get-Content $p -Raw
-          $fixed = $raw -replace '\\r\\n', "`r`n"
+          $fixed = $raw -replace '\r\n', "`r`n"
           if ($fixed -ne $raw) { Set-Content $p -Value $fixed -Encoding UTF8; Write-Host 'Normalized literal CRLF sequences in Program.cs' } else { Write-Host 'No literal CRLF sequences found in Program.cs' }
+      - name: Restore
+        shell: pwsh
+        run: dotnet restore
       - name: Publish (Release)
         shell: pwsh
         run: |
-          dotnet restore
           dotnet publish ManyCopy.csproj -c Release -r win-x64 -p:SelfContained=true -p:PublishSingleFile=true -p:PublishTrimmed=false --nologo
       - name: Compute checksum
         shell: pwsh
@@ -59,4 +63,3 @@ jobs:
             bin/Release/net8.0-windows/win-x64/publish/ManyCopy.exe
             bin/Release/net8.0-windows/win-x64/publish/ManyCopy.exe.sha256
             bin/Release/net8.0-windows/win-x64/publish/ManyCopy-*-win-x64.zip
-
