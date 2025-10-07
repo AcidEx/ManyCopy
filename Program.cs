@@ -86,7 +86,7 @@ namespace ManyCopy
 
             Controls.Add(new Label
             {
-                Text = "v1.1.5",
+                Text = "v1.1.6",
                 ForeColor = Color.White,
                 Font = new Font("Segoe UI", 11f),
                 AutoSize = true,
@@ -1081,6 +1081,7 @@ namespace ManyCopy
         [Flags] private enum SIATTRIBFLAGS { SIATTRIBFLAGS_AND = 1, SIATTRIBFLAGS_OR = 2, SIATTRIBFLAGS_APPCOMPAT = 3 }
     }
 }
+
 
 
 
