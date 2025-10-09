@@ -1,42 +1,62 @@
-ManyCopy Handoff (Windows/PowerShell)
+ManyCopy Handoff – 1.1.7 “The colour update” (Windows/PowerShell)
 
-Repo/Branch
-- Path: I:\ManyCopy\ManyCopy
-- Branch: codex/1.1.5 (tracking origin)
+Repo / Branch / Tag
+- Path: C:\git\manycopy1.1.7
+- Branch: release/1.1.7 (up to date with origin)
+- Tag: v1.1.7 (pushed)
 
-Build/Run
-- Clean: delete bin/obj before builds.
-- Run (DLL): dotnet "I:\ManyCopy\ManyCopy\bin\Release\net8.0-windows\win-x64\ManyCopy.dll"
-- Publish+Sign (self-signed, single-file, self-contained):
-  - powershell.exe -NoProfile -ExecutionPolicy Bypass -File I:\ManyCopy\ManyCopy\tools\publish-and-sign.ps1 -Configuration Release
-- Latest exe: I:\ManyCopy\ManyCopy\bin\Release\net8.0-windows\win-x64\publish\ManyCopy.exe
-- EXE signature: self-signed dev cert, timestamped. Windows will show an untrusted root (expected). Signtool not installed locally; script output shows certificate and status.
+Build / Run
+- Clean/Restore/Build:
+  - dotnet clean
+  - dotnet restore
+  - dotnet build -c Release
+- Publish (self-contained single file, win-x64):
+  - dotnet publish ManyCopy.csproj -c Release
+  - Output: C:\git\manycopy1.1.7\bin\Release\net8.0-windows\win-x64\publish\ManyCopy.exe
+- Run EXE: launch the published ManyCopy.exe
+- Run DLL (useful on locked-down machines):
+  - dotnet "C:\git\manycopy1.1.7\bin\Release\net8.0-windows\win-x64\ManyCopy.dll"
 
-Recent Changes
-- UI: Combined Fixed/Numbered prefix into a dropdown; added Numbered suffix + dropdown. Simplified bottom row.
-- Layout: Kept log area inside window; positioned Ready label above log; enlarged default log height; slightly reduced destination list height.
-- Build: Exclude `tests/**` and `ManyCopy.Core/**` from app compile; set `GenerateTargetFrameworkAttribute=false`.
-- Manifest: Added `app.manifest` (UAC asInvoker, DPI PerMonitorV2) and wired in `ManyCopy.csproj`.
-- Scripts: `tools\sign.ps1`, `tools\publish-and-sign.ps1`.
-- Tests/tooling: Added `global.json` pinning SDK 8.0.414; added `Microsoft.NET.Test.Sdk` 17.11.1 and `Newtonsoft.Json` 13.0.3 (PrivateAssets=all) to `tests\ManyCopy.Tests\ManyCopy.Tests.csproj`.
+Security/Policy Notes (enterprise)
+- Some domains enforce Defender ASR rule 01443614-CD74-433A-B99E-2ECDC07BFC25 (prevalence/age/trusted). If the EXE is blocked, either run the DLL via dotnet host, or add an ASR OnlyExclusion for the publish folder/EXE, or code-sign and allow by publisher.
 
-Key Files
-- Program.cs
-- ManyCopy.csproj
-- app.manifest
-- tools\publish-and-sign.ps1
-- tools\sign.ps1
-- tests\ManyCopy.Tests\ManyCopy.Tests.csproj
-- global.json
+Release 1.1.7 Highlights
+- Accent color system with bold Light/Dark tints; “Default” returns to classic look (blue primary only).
+- Multi-file sources:
+  - Add via Browse (multi-select) or drag/drop onto the Source field.
+  - TextBox shows inline, comma-separated basenames with “+N more” when long; full list on tooltip.
+  - New buttons on the same row: Remove (menu to remove specific file), Clear (clear all).
+  - Right-click Source field shows the same menu (Add/Remove/Clear).
+- Auto-clear toggles for Sources and Destinations after non-preview copy.
+- Dark mode checkbox/radio backgrounds use parent BG (no grey highlight).
+- Range Helper group height reduced (less blank space).
+- Bottom action buttons (Undo/Redo/Engage) aligned flush-right and resilient to resize.
 
-Status
-- Build: Release win-x64 OK.
-- Run: DLL launch OK; EXE launch OK (terminated to avoid file locks).
-- Publish: OK; signed single-file EXE present at path above.
-- Tests: 10 passed, 0 failed (`dotnet test -c Release`) under .NET SDK 8.0.414.
+Versioning / UX
+- ManyCopy.csproj version bumped to 1.1.7 (Assembly/File/Informational/Version).
+- Splash shows v1.1.7 (reads FileVersion via FileVersionInfo).
+- README and CHANGELOG updated; tag v1.1.7 pushed.
 
-Known/Next
-- Warning NETSDK1137 about WindowsDesktop SDK is benign; leave as-is for now.
-- Warning WFAC010 about High DPI in manifest — consider setting via `Application.SetHighDpiMode` or project property later.
-- Optional: add CI to enforce SDK pin and run tests; consider trusted code signing for releases.
+Tests
+- Existing xUnit tests cover NamingHelpers; no UI automation added. Run: dotnet test -c Release
+
+Code Map / Key Touchpoints (Program.cs)
+- Source row: txtSource + btnSrcRemove + btnSrcClearAll + Browse. ContextMenuStrip on txtSource for managing files.
+- Inline source display: RefreshSourceText() + ComposeInlineList() build a single-line summary + tooltip.
+- Copy logic: GetSelectedSources() iterates each source per destination; numbered prefix/suffix increment per destination (intentional).
+- LayoutBottom(): aligns action buttons to the right; keeps log/status positions dynamic.
+- Theme.Resolve(): tints Light/Dark palettes by accent; “Default” leaves classic palettes.
+- Checkbox/Radio theming: background matches parent (fixes “grey box” in dark mode).
+
+Known / Follow-ups
+- Build warnings:
+  - CS8604 (Path.Combine param) and CS8620 (nullability on ComposeInlineList input) are benign; consider tightening nullability annotations later.
+- Inline source interaction could be enhanced to allow click-to-remove on a specific token in the TextBox; current approach uses a Remove menu to keep the single-line look.
+- Consider code-signing for future releases and enabling a Publisher allow rule in enterprise environments.
+- If publishing while the app is running, close ManyCopy first to avoid file-lock errors.
+
+Quick Commands
+- Publish fresh: dotnet clean; dotnet restore; dotnet build -c Release; dotnet publish ManyCopy.csproj -c Release
+- Run DLL: dotnet "bin\Release\net8.0-windows\win-x64\ManyCopy.dll"
+
 
