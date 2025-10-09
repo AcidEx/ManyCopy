@@ -1,9 +1,12 @@
 # ManyCopy
 
 *DISCLAIMER*
-I - AcidEx - have used OpenAI's Codex to build this app from version1.1.5-1.1.7. 
+
+"I - AcidEx - have used OpenAI's Codex to build this app from version1.1.5-1.1.7. 
 prior builds were made by ChatGPT5 under my direction. 
-The entire idea, design, and testing of this app was done by myself, but the coding was done by Codex.
+The entire idea, design, and testing of this app was done by myself, but the coding was done by Codex."
+
+## Description
 
 ManyCopy is a Windows utility that copies 1 or more source files into many
 folders. The app supports sequential folder generation with optional range
