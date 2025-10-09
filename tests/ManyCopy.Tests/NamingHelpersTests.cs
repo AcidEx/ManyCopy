@@ -59,5 +59,33 @@ namespace ManyCopy.Tests
 
             Assert.Equal("prefix-image.png", result);
         }
+
+        [Fact]
+        public void SanitizeFileSegment_StripsInvalidChars()
+        {
+            string input = "inv*al:id<>?";
+            string sanitized = NamingHelpers.SanitizeFileSegment(input);
+            Assert.Equal("invalid", sanitized);
+        }
+
+        [Fact]
+        public void BuildTargetName_WithSeparatorsAndPadding()
+        {
+            string result = NamingHelpers.BuildTargetName(
+                baseName: "doc.txt",
+                useFixed: false,
+                fixedPrefix: null,
+                useRange: true,
+                rangeBase: "job-",
+                index: 5,
+                useSuffix: true,
+                suffix: "rev",
+                prefixPadWidth: 3,
+                suffixPadWidth: 0,
+                prefixSeparator: "-",
+                suffixSeparator: "_");
+            // prefix: job-005-, then base name, then _rev
+            Assert.Equal("job-005-doc_rev.txt", result);
+        }
     }
 }

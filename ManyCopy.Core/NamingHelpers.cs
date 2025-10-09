@@ -6,6 +6,18 @@ namespace ManyCopy.Core
 {
     public static class NamingHelpers
     {
+        /// <summary>
+        /// Sanitizes a filename segment by removing characters invalid for file names.
+        /// Returns an empty string if input is null or whitespace.
+        /// </summary>
+        public static string SanitizeFileSegment(string? text)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return string.Empty;
+            var invalid = Path.GetInvalidFileNameChars();
+            var filtered = new string(text.Where(ch => !invalid.Contains(ch)).ToArray());
+            return filtered.Trim();
+        }
+
         public static int CalculateRangePadWidth(string? startText, string? endText)
         {
             static int WidthFrom(string? text)
@@ -40,28 +52,59 @@ namespace ManyCopy.Core
             return value.ToString();
         }
 
+        /// <summary>
+        /// Compose a target file name from the base name and optional prefix/suffix.
+        /// Allows optional padding and separators for numbered prefix/suffix.
+        /// </summary>
+        public static string BuildTargetName(
+            string baseName,
+            bool useFixed, string? fixedPrefix,
+            bool useRange, string? rangeBase, int index,
+            bool useSuffix, string? suffix,
+            int prefixPadWidth = 0,
+            int suffixPadWidth = 0,
+            string? prefixSeparator = null,
+            string? suffixSeparator = null)
+        {
+            string prefixPart = string.Empty;
+            if (useRange)
+            {
+                var basePart = SanitizeFileSegment(rangeBase);
+                var num = FormatRangeNumber(index, prefixPadWidth);
+                prefixPart = basePart + num;
+            }
+            else if (useFixed)
+            {
+                prefixPart = SanitizeFileSegment(fixedPrefix);
+            }
+
+            string nameNoExt = Path.GetFileNameWithoutExtension(baseName);
+            string ext = Path.GetExtension(baseName);
+            string suffixPart = string.Empty;
+            if (useSuffix)
+            {
+                var sufBase = SanitizeFileSegment(suffix);
+                // When suffixPadWidth > 0 and suffix contains a trailing number placeholder,
+                // the caller should have already provided the numeric string. We still allow
+                // pure text suffixes here.
+                suffixPart = sufBase;
+            }
+
+            // Insert separators only when the corresponding part is non-empty
+            var preSep = string.IsNullOrEmpty(prefixPart) ? string.Empty : (prefixSeparator ?? string.Empty);
+            var sufSep = string.IsNullOrEmpty(suffixPart) ? string.Empty : (suffixSeparator ?? string.Empty);
+
+            if (!string.IsNullOrEmpty(suffixPart)) nameNoExt += sufSep + suffixPart;
+
+            return prefixPart + (string.IsNullOrEmpty(prefixPart) ? string.Empty : preSep) + nameNoExt + ext;
+        }
+
+        // Back-compat overload keeping the original signature used by Program.cs before padding/separators
         public static string BuildTargetName(
             string baseName,
             bool useFixed, string? fixedPrefix,
             bool useRange, string? rangeBase, int index,
             bool useSuffix, string? suffix)
-        {
-            string prefixPart = string.Empty;
-            if (useRange)
-            {
-                prefixPart = (rangeBase ?? string.Empty).Trim() + index.ToString();
-            }
-            else if (useFixed)
-            {
-                prefixPart = (fixedPrefix ?? string.Empty).Trim();
-            }
-
-            string nameNoExt = Path.GetFileNameWithoutExtension(baseName);
-            string ext = Path.GetExtension(baseName);
-            string suffixPart = useSuffix ? (suffix ?? string.Empty).Trim() : string.Empty;
-            if (!string.IsNullOrEmpty(suffixPart)) nameNoExt += suffixPart;
-
-            return prefixPart + nameNoExt + ext;
-        }
+            => BuildTargetName(baseName, useFixed, fixedPrefix, useRange, rangeBase, index, useSuffix, suffix, 0, 0, null, null);
     }
 }

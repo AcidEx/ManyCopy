@@ -47,3 +47,4 @@ and uses [Semantic Versioning](https://semver.org/).
 ### Removed
 - The outdated COM interop comment from the project file so the documentation
   matches the current implementation details.
+

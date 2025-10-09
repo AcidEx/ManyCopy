@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -89,7 +89,7 @@ namespace ManyCopy
 
             Controls.Add(new Label
             {
-                Text = "v1.1.6",
+                Text = GetShortVersionLabel(),
                 ForeColor = Color.White,
                 Font = new Font("Segoe UI", 11f),
                 AutoSize = true,
@@ -125,13 +125,49 @@ namespace ManyCopy
                 }
 
                 var assets = Path.Combine(AppContext.BaseDirectory, "Assets");
-                foreach (var name in new[] { "splash.png", "splash.jpg", "splash.webp", "Splash.png", "Splash.jpg", "Splash.webp" })
+                // Prefer high-DPI asset if present
+                float scale = 1f; try { using var g = CreateGraphics(); scale = g.DpiX / 96f; } catch { }
+                var candidates = new[] { "Splash@2x.png", "splash@2x.png", "splash.png", "splash.jpg", "splash.webp", "Splash.png", "Splash.jpg", "Splash.webp" };
+                foreach (var name in candidates)
                 {
+                    if (scale < 1.5f && (name?.IndexOf("@2x", StringComparison.OrdinalIgnoreCase) ?? -1) >= 0) continue;
                     var p = Path.Combine(assets, name);
                     if (File.Exists(p)) { _bg = Image.FromFile(p); return; }
                 }
             }
             catch { }
+        }
+
+        private static string GetShortVersionLabel()
+        {
+            try
+            {
+                // Prefer file version (often four parts), fall back to informational
+                var fvi = System.Diagnostics.FileVersionInfo.GetVersionInfo(Application.ExecutablePath);
+                var fileVer = fvi?.FileVersion;
+                if (!string.IsNullOrWhiteSpace(fileVer))
+                {
+                    // Normalize to vX.Y.Z[.W]
+                    var parts = fileVer.Split('.')
+                        .Take(4)
+                        .ToArray();
+                    return "v" + string.Join('.', parts);
+                }
+
+                var info = typeof(Program).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? string.Empty;
+                var shortInfo = info.Split('+','-',' ')[0];
+                if (Version.TryParse(shortInfo, out var v))
+                {
+                    // Include revision when available
+                    if (v.Revision >= 0)
+                        return $"v{v.Major}.{v.Minor}.{v.Build}.{v.Revision}";
+                    if (v.Build >= 0)
+                        return $"v{v.Major}.{v.Minor}.{v.Build}";
+                    return $"v{v.Major}.{v.Minor}";
+                }
+                return "v" + shortInfo;
+            }
+            catch { return string.Empty; }
         }
 
         protected override void Dispose(bool disposing)
@@ -143,10 +179,12 @@ namespace ManyCopy
 
     // =================== Theme ===================
     public enum ThemeMode { Light, Dark, Auto }
+    public enum AccentPreset { Default, Blue, Green, Purple, Orange, Red }
 
     public static class Theme
     {
         public static ThemeMode Current { get; private set; } = ThemeMode.Auto;
+        public static AccentPreset CurrentAccent { get; private set; } = AccentPreset.Default;
 
         public sealed class Palette
         {
@@ -185,36 +223,151 @@ namespace ManyCopy
             return ThemeMode.Light;
         }
 
+        private static Color AccentToColor(AccentPreset preset)
+        {
+            return preset switch
+            {
+                AccentPreset.Green => Color.FromArgb(16, 124, 16),
+                AccentPreset.Purple => Color.FromArgb(136, 84, 208),
+                AccentPreset.Orange => Color.FromArgb(218, 112, 0),
+                AccentPreset.Red => Color.FromArgb(210, 22, 22),
+                _ => Color.FromArgb(0, 120, 215), // Blue default
+            };
+        }
+
+        private static Color ChangeBrightness(Color c, int delta)
+        {
+            int clamp(int v) => Math.Min(255, Math.Max(0, v));
+            return Color.FromArgb(
+                c.A,
+                clamp(c.R + delta),
+                clamp(c.G + delta),
+                clamp(c.B + delta));
+        }
+
+        private static Color Blend(Color a, Color b, double t)
+        {
+            t = Math.Max(0, Math.Min(1, t));
+            byte lerp(byte x, byte y) => (byte)(x + (y - x) * t);
+            return Color.FromArgb(
+                255,
+                lerp(a.R, b.R),
+                lerp(a.G, b.G),
+                lerp(a.B, b.B));
+        }
+
+        public static void SetAccent(AccentPreset preset)
+        {
+            CurrentAccent = preset;
+        }
+
         public static Palette Resolve(ThemeMode mode)
         {
             if (mode == ThemeMode.Auto) mode = DetectSystemTheme();
+            bool noTint = CurrentAccent == AccentPreset.Default;
+            var accent = AccentToColor(noTint ? AccentPreset.Blue : CurrentAccent);
             if (mode == ThemeMode.Dark)
             {
+                if (noTint)
+                {
+                    // Original dark palette (no tint), primary uses blue accent
+                    return new Palette
+                    {
+                        Bg = Color.FromArgb(32, 32, 32),
+                        Panel = Color.FromArgb(40, 40, 40),
+                        Text = Color.Gainsboro,
+                        Accent = accent,
+                        InputBg = Color.FromArgb(28, 28, 28),
+                        InputBorder = Color.FromArgb(70, 70, 70),
+                        LogBg = Color.FromArgb(20, 20, 20),
+                        ButtonBg = Color.FromArgb(60, 60, 60),
+                        ButtonText = Color.Gainsboro,
+                        ButtonBorder = Color.FromArgb(90, 90, 90),
+                        ButtonBgHover = Color.FromArgb(72, 72, 72),
+                        ButtonBgDown = Color.FromArgb(52, 52, 52),
+                        DisabledText = Color.FromArgb(110, 110, 110),
+                        PrimaryBg = accent,
+                        PrimaryText = Color.White,
+                        PrimaryHover = ChangeBrightness(accent, 20),
+                        PrimaryDown = ChangeBrightness(accent, -25),
+                        PrimaryBorder = ChangeBrightness(accent, -25),
+                    };
+                }
                 return new Palette
                 {
-                    Bg = Color.FromArgb(32, 32, 32),
-                    Panel = Color.FromArgb(40, 40, 40),
+                    // Tint the dark base with accent so the whole window hue changes
+                    Bg = Blend(Color.FromArgb(28, 28, 28), accent, 0.18),
+                    Panel = Blend(Color.FromArgb(38, 38, 38), accent, 0.24),
                     Text = Color.Gainsboro,
-                    Accent = Color.FromArgb(0, 122, 204),
-                    InputBg = Color.FromArgb(28, 28, 28),
-                    InputBorder = Color.FromArgb(70, 70, 70),
-                    LogBg = Color.FromArgb(20, 20, 20),
+                    Accent = accent,
+                    InputBg = Blend(Color.FromArgb(30, 30, 30), accent, 0.18),
+                    InputBorder = Blend(Color.FromArgb(70, 70, 70), accent, 0.15),
+                    LogBg = Blend(Color.FromArgb(22, 22, 22), accent, 0.18),
 
-                    ButtonBg = Color.FromArgb(60, 60, 60),
+                    ButtonBg = Blend(Color.FromArgb(58, 58, 58), accent, 0.20),
                     ButtonText = Color.Gainsboro,
-                    ButtonBorder = Color.FromArgb(90, 90, 90),
-                    ButtonBgHover = Color.FromArgb(72, 72, 72),
-                    ButtonBgDown = Color.FromArgb(52, 52, 52),
+                    ButtonBorder = Blend(Color.FromArgb(90, 90, 90), accent, 0.15),
+                    ButtonBgHover = Blend(Color.FromArgb(72, 72, 72), accent, 0.20),
+                    ButtonBgDown = Blend(Color.FromArgb(52, 52, 52), accent, 0.20),
                     DisabledText = Color.FromArgb(110, 110, 110),
 
-                    PrimaryBg = Color.FromArgb(0, 122, 204),
+                    PrimaryBg = accent,
                     PrimaryText = Color.White,
-                    PrimaryHover = Color.FromArgb(10, 145, 235),
-                    PrimaryDown = Color.FromArgb(0, 95, 175),
-                    PrimaryBorder = Color.FromArgb(0, 95, 175),
+                    PrimaryHover = ChangeBrightness(accent, 20),
+                    PrimaryDown = ChangeBrightness(accent, -25),
+                    PrimaryBorder = ChangeBrightness(accent, -25),
                 };
             }
-            return new Palette();
+            if (noTint)
+            {
+                // Original light palette (no tint) with blue primary accent
+                return new Palette
+                {
+                    Bg = Color.White,
+                    Panel = Color.White,
+                    Text = Color.Black,
+                    Accent = accent,
+                    InputBg = Color.White,
+                    InputBorder = Color.FromArgb(200, 200, 200),
+                    LogBg = Color.White,
+                    ButtonBg = SystemColors.Control,
+                    ButtonText = Color.Black,
+                    ButtonBorder = Color.FromArgb(180, 180, 180),
+                    ButtonBgHover = SystemColors.ControlLight,
+                    ButtonBgDown = SystemColors.ControlDark,
+                    DisabledText = Color.FromArgb(140, 140, 140),
+                    PrimaryBg = accent,
+                    PrimaryText = Color.White,
+                    PrimaryHover = ChangeBrightness(accent, 20),
+                    PrimaryDown = ChangeBrightness(accent, -25),
+                    PrimaryBorder = ChangeBrightness(accent, -25),
+                };
+            }
+            var p = new Palette
+            {
+                // Light theme: bold tinting from accent (kept readable)
+                Bg = Blend(Color.White, accent, 0.32),
+                Panel = Blend(Color.White, accent, 0.40),
+                Text = Color.Black,
+                Accent = accent,
+                InputBg = Blend(Color.White, accent, 0.28),
+                InputBorder = Blend(Color.FromArgb(200,200,200), accent, 0.24),
+                LogBg = Blend(Color.White, accent, 0.22),
+
+                ButtonBg = Blend(SystemColors.Control, accent, 0.36),
+                ButtonText = Color.Black,
+                ButtonBorder = Blend(Color.FromArgb(180,180,180), accent, 0.30),
+                ButtonBgHover = Blend(SystemColors.ControlLight, accent, 0.38),
+                ButtonBgDown = Blend(SystemColors.ControlDark, accent, 0.34),
+                DisabledText = Color.FromArgb(140,140,140),
+
+                PrimaryBg = accent,
+                PrimaryText = Color.White,
+                PrimaryHover = ChangeBrightness(accent, 20),
+                PrimaryDown = ChangeBrightness(accent, -25),
+                PrimaryBorder = ChangeBrightness(accent, -25),
+            };
+            return p;
         }
 
         public static void ApplyTo(Control root, ThemeMode mode)
@@ -302,8 +455,16 @@ namespace ManyCopy
 
                 case CheckBox:
                 case RadioButton:
+                    // Avoid the "grey box" look in dark mode: match the parent background
+                    c.ForeColor = p.Text;
+                    c.BackColor = c.Parent != null ? c.Parent.BackColor : p.Bg;
+                    break;
+
                 case ComboBox:
-                    c.ForeColor = p.Text; c.BackColor = p.Panel; break;
+                    // Inputs keep the panel tint for contrast
+                    c.ForeColor = p.Text;
+                    c.BackColor = p.Panel;
+                    break;
             }
 
             if (c is Form f) f.BackColor = p.Bg;
@@ -316,27 +477,40 @@ namespace ManyCopy
     public class MainForm : Form
     {
         private ComboBox cmbTheme = null!;
+        private ComboBox cmbAccent = null!;
         private Button btnRefreshTheme = null!;
 
         private TextBox txtSource = null!;
+        private readonly List<string> _sources = new();
+        private ContextMenuStrip srcMenu = null!;
+        private ToolTip srcTip = new ToolTip();
+        private Button btnSrcRemove = null!;
+        private Button btnSrcClearAll = null!;
         private Button btnBrowseSource = null!;
 
         private ListBox listDest = null!;
+        private readonly HashSet<string> _destSet = new(StringComparer.OrdinalIgnoreCase);
         private Button btnBrowseDest = null!;
         private Button btnRemoveSel = null!;
         private Button btnClear = null!;
 
                 private CheckBox chkOverwrite = null!;
+        private CheckBox chkAutoClearDest = null!;
+        private CheckBox chkAutoClearSources = null!;
         // Prefix controls (mode dropdown replacing separate checkboxes)
         private ComboBox cmbPrefixMode = null!; // 0=None, 1=Fixed, 2=Numbered
         private TextBox txtPrefix = null!;      // Fixed prefix text
         private TextBox txtPrefixBase = null!;  // Numbered prefix base
         private NumericUpDown nudPrefixStart = null!; // Numbered prefix start
+        private NumericUpDown nudPrefixPad = null!;   // Optional zero-padding for numbered prefix
+        private ComboBox cmbPrefixSep = null!;        // Separator between prefix and name
         // Suffix controls (mode dropdown with fixed/numbered)
         private ComboBox cmbSuffixMode = null!; // 0=None, 1=Fixed, 2=Numbered
         private TextBox txtSuffix = null!;      // Fixed suffix text
         private TextBox txtSuffixBase = null!;  // Numbered suffix base
         private NumericUpDown nudSuffixStart = null!; // Numbered suffix start
+        private NumericUpDown nudSuffixPad = null!;   // Optional zero-padding for numbered suffix
+        private ComboBox cmbSuffixSep = null!;        // Separator between name and suffix
         private CheckBox chkPreview = null!;
 
         private CheckBox chkEnableRange = null!;
@@ -354,6 +528,9 @@ namespace ManyCopy
         private Button btnRedo = null!;
         private Label lblStatus = null!;
         private TextBox logBox = null!;
+
+        // Simple profiles
+        
 
         private readonly Stack<HistoryEntry> _undo = new();
         private readonly Stack<HistoryEntry> _redo = new();
@@ -379,7 +556,7 @@ namespace ManyCopy
             KeyDown += MainForm_KeyDown;
 
             // Theme controls
-            cmbTheme = new ComboBox { Left = 820, Top = 12, Width = 155, DropDownStyle = ComboBoxStyle.DropDownList, Anchor = AnchorStyles.Top | AnchorStyles.Right };
+            cmbTheme = new ComboBox { Left = 885, Top = 12, Width = 90, DropDownStyle = ComboBoxStyle.DropDownList, Anchor = AnchorStyles.Top | AnchorStyles.Right };
             cmbTheme.Items.AddRange(new object[] { "Auto (Windows)", "Light", "Dark" });
             cmbTheme.SelectedIndexChanged += (_, __) =>
             {
@@ -389,7 +566,21 @@ namespace ManyCopy
             };
             Controls.Add(cmbTheme);
 
-            btnRefreshTheme = new Button { Text = "Refresh Theme", Left = 700, Top = 11, Width = 110, Height = 24, Anchor = AnchorStyles.Top | AnchorStyles.Right };
+            // Accent selector
+            cmbAccent = new ComboBox { Left = 790, Top = 12, Width = 90, DropDownStyle = ComboBoxStyle.DropDownList, Anchor = AnchorStyles.Top | AnchorStyles.Right };
+            cmbAccent.Items.AddRange(new object[] { "Default", "Blue", "Green", "Purple", "Orange", "Red" });
+            cmbAccent.SelectedIndexChanged += (_, __) =>
+            {
+                var preset = cmbAccent.SelectedIndex switch { 0 => AccentPreset.Default, 1 => AccentPreset.Blue, 2 => AccentPreset.Green, 3 => AccentPreset.Purple, 4 => AccentPreset.Orange, 5 => AccentPreset.Red, _ => AccentPreset.Default };
+                Theme.SetAccent(preset);
+                var mode = cmbTheme.SelectedIndex switch { 1 => ThemeMode.Light, 2 => ThemeMode.Dark, _ => ThemeMode.Auto };
+                Theme.ApplyTo(this, mode);
+                // Persist together in the existing settings file format: Mode;Accent
+                try { var dir = Path.GetDirectoryName(SettingsPath)!; if (!Directory.Exists(dir)) Directory.CreateDirectory(dir); System.IO.File.WriteAllText(SettingsPath, $"{mode};{preset}"); } catch { }
+            };
+            Controls.Add(cmbAccent);
+
+            btnRefreshTheme = new Button { Text = "Refresh", Left = 725, Top = 11, Width = 60, Height = 24, Anchor = AnchorStyles.Top | AnchorStyles.Right };
             btnRefreshTheme.Click += (_, __) =>
             {
                 var mode = cmbTheme.SelectedIndex switch { 1 => ThemeMode.Light, 2 => ThemeMode.Dark, _ => ThemeMode.Auto };
@@ -397,31 +588,46 @@ namespace ManyCopy
             };
             Controls.Add(btnRefreshTheme);
 
-            // Source row
-            var lblSource = new Label { Text = "Source file:", Left = 10, Top = 50, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
-            txtSource = new TextBox { Left = 95, Top = 47, Width = 780, AllowDrop = true, Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right };
-            btnBrowseSource = new Button { Text = "Browse...", Left = 885, Top = 46, Width = 90, Anchor = AnchorStyles.Top | AnchorStyles.Right };
-            btnBrowseSource.Click += (_, __) => PickSource();
+            
+
+            // Source (compact single-line with multi-file support under the hood)
+            var lblSource = new Label { Text = "Source files:", Left = 10, Top = 50, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
+            // Narrow the textbox so it never sits under the new buttons
+            txtSource = new TextBox { Left = 95, Top = 47, Width = 620, AllowDrop = true, Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right };
             txtSource.DragEnter += (s, e) =>
             {
-                if (e.Data?.GetDataPresent(DataFormats.FileDrop) == true &&
-                    e.Data.GetData(DataFormats.FileDrop) is string[] paths &&
-                    paths.Length == 1 && File.Exists(paths[0]))
+                if (e.Data?.GetDataPresent(DataFormats.FileDrop) == true && e.Data.GetData(DataFormats.FileDrop) is string[] paths && paths.Any(File.Exists))
                     e.Effect = DragDropEffects.Copy;
             };
             txtSource.DragDrop += (s, e) =>
             {
-                if (e.Data?.GetData(DataFormats.FileDrop) is string[] paths &&
-                    paths.Length == 1 && File.Exists(paths[0]))
-                    txtSource.Text = paths[0];
+                if (e.Data?.GetData(DataFormats.FileDrop) is string[] paths)
+                {
+                    AddSources(paths.Where(File.Exists));
+                }
             };
-            Controls.AddRange(new Control[] { lblSource, txtSource, btnBrowseSource });
+            // Source action buttons (right-aligned on the same row)
+            btnBrowseSource = new Button { Text = "Browse...", Left = 885, Top = 46, Width = 90, Anchor = AnchorStyles.Top | AnchorStyles.Right };
+            btnBrowseSource.Click += (_, __) => PickSources();
+            btnSrcClearAll = new Button { Text = "Clear", Left = 804, Top = 46, Width = 75, Anchor = AnchorStyles.Top | AnchorStyles.Right };
+            btnSrcClearAll.Click += (_, __) => { _sources.Clear(); RefreshSourceText(); };
+            btnSrcRemove = new Button { Text = "Remove", Left = 728, Top = 46, Width = 70, Anchor = AnchorStyles.Top | AnchorStyles.Right };
+            btnSrcRemove.Click += (_, __) => { BuildSourceMenu(); srcMenu.Show(btnSrcRemove, new System.Drawing.Point(0, btnSrcRemove.Height)); };
+
+            // Context menu for managing multiple sources without changing layout
+            srcMenu = new ContextMenuStrip();
+            srcMenu.Opening += (s, e) => BuildSourceMenu();
+            txtSource.ContextMenuStrip = srcMenu;
+            srcTip.SetToolTip(txtSource, string.Empty);
+            Controls.AddRange(new Control[] { lblSource, txtSource, btnSrcRemove, btnSrcClearAll, btnBrowseSource });
+            // Ensure buttons sit above the textbox in z-order
+            try { btnSrcRemove.BringToFront(); btnSrcClearAll.BringToFront(); btnBrowseSource.BringToFront(); } catch { }
 
             // Range Helper
             chkEnableRange = new CheckBox { Text = "Enable Range Helper", Left = 10, Top = 80, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
             chkEnableRange.CheckedChanged += (_, __) => grpRange.Visible = chkEnableRange.Checked;
 
-            grpRange = new GroupBox { Text = "Range Helper", Left = 10, Top = 105, Width = 965, Height = 120, Visible = false, Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right };
+            grpRange = new GroupBox { Text = "Range Helper", Left = 10, Top = 105, Width = 965, Height = 100, Visible = false, Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right };
             var lblRoot = new Label { Text = "Root:", Left = 10, Top = 25, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
             txtRoot = new TextBox { Left = 60, Top = 22, Width = 800, Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right };
             btnBrowseRoot = new Button { Text = "Browse...", Left = 870, Top = 21, Width = 85, Anchor = AnchorStyles.Top | AnchorStyles.Right };
@@ -477,12 +683,15 @@ namespace ManyCopy
             btnRemoveSel.Click += (_, __) => RemoveSelected();
 
             btnClear = new Button { Text = "Clear All", Left = 885, Top = 325, Width = 90, Anchor = AnchorStyles.Top | AnchorStyles.Right };
-            btnClear.Click += (_, __) => listDest.Items.Clear();
+            btnClear.Click += (_, __) => { listDest.Items.Clear(); _destSet.Clear(); };
 
             Controls.AddRange(new Control[] { lblDest, listDest, btnBrowseDest, btnRemoveSel, btnClear });
 
             // Options
                         chkOverwrite = new CheckBox { Text = "Overwrite if exists", Left = 10, Top = 650, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            // Place auto-clear toggles near their related sections
+            chkAutoClearSources = new CheckBox { Text = "Auto-clear sources after copy", Left = 10, Top = 26, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
+            chkAutoClearDest = new CheckBox { Text = "Auto-clear destinations after copy", Left = 10, Top = 215, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
 
             // Prefix mode: None / Fixed / Numbered
             var lblPrefix = new Label { Text = "Prefix:", Left = 160, Top = 650, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
@@ -494,6 +703,9 @@ namespace ManyCopy
             txtPrefixBase = new TextBox { Left = 310, Top = 647, Width = 100, Enabled = false, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
             var lblStartNum = new Label { Text = "Start:", Left = 415, Top = 650, AutoSize = true, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
             nudPrefixStart = new NumericUpDown { Left = 455, Top = 647, Width = 60, Minimum = 0, Maximum = 1_000_000, Value = 1, Enabled = false, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            nudPrefixPad = new NumericUpDown { Left = 520, Top = 647, Width = 50, Minimum = 0, Maximum = 10, Value = 0, Enabled = false, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            cmbPrefixSep = new ComboBox { Left = 575, Top = 646, Width = 60, Enabled = false, Visible = false, DropDownStyle = ComboBoxStyle.DropDownList, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            cmbPrefixSep.Items.AddRange(new object[] { "(none)", "-", "_" }); cmbPrefixSep.SelectedIndex = 0;
 
             cmbPrefixMode.SelectedIndexChanged += (_, __) =>
             {
@@ -502,6 +714,8 @@ namespace ManyCopy
                 txtPrefix.Visible = (mode == 1); txtPrefix.Enabled = (mode == 1);
                 txtPrefixBase.Visible = (mode == 2); txtPrefixBase.Enabled = (mode == 2);
                 lblStartNum.Visible = (mode == 2); nudPrefixStart.Visible = (mode == 2); nudPrefixStart.Enabled = (mode == 2);
+                nudPrefixPad.Visible = (mode == 2); nudPrefixPad.Enabled = (mode == 2);
+                cmbPrefixSep.Visible = (mode != 0); cmbPrefixSep.Enabled = (mode != 0);
             };
 
             // Suffix mode: None / Fixed / Numbered
@@ -514,6 +728,9 @@ namespace ManyCopy
             txtSuffixBase = new TextBox { Left = 680, Top = 647, Width = 100, Enabled = false, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
             var lblSuffixStart = new Label { Text = "Start:", Left = 785, Top = 650, AutoSize = true, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
             nudSuffixStart = new NumericUpDown { Left = 825, Top = 647, Width = 60, Minimum = 0, Maximum = 1_000_000, Value = 1, Enabled = false, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            nudSuffixPad = new NumericUpDown { Left = 890, Top = 647, Width = 50, Minimum = 0, Maximum = 10, Value = 0, Enabled = false, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            cmbSuffixSep = new ComboBox { Left = 945, Top = 646, Width = 60, Enabled = false, Visible = false, DropDownStyle = ComboBoxStyle.DropDownList, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            cmbSuffixSep.Items.AddRange(new object[] { "(none)", "-", "_" }); cmbSuffixSep.SelectedIndex = 0;
 
             cmbSuffixMode.SelectedIndexChanged += (_, __) =>
             {
@@ -521,6 +738,8 @@ namespace ManyCopy
                 txtSuffix.Visible = (mode == 1); txtSuffix.Enabled = (mode == 1);
                 txtSuffixBase.Visible = (mode == 2); txtSuffixBase.Enabled = (mode == 2);
                 lblSuffixStart.Visible = (mode == 2); nudSuffixStart.Visible = (mode == 2); nudSuffixStart.Enabled = (mode == 2);
+                nudSuffixPad.Visible = (mode == 2); nudSuffixPad.Enabled = (mode == 2);
+                cmbSuffixSep.Visible = (mode != 0); cmbSuffixSep.Enabled = (mode != 0);
             };
 
             chkPreview = new CheckBox { Text = "Preview mode", Left = 10, Top = 680, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
@@ -528,8 +747,10 @@ namespace ManyCopy
             Controls.AddRange(new Control[]
             {
                 chkOverwrite,
-                lblPrefix, cmbPrefixMode, txtPrefix, txtPrefixBase, lblStartNum, nudPrefixStart,
-                lblSuffix, cmbSuffixMode, txtSuffix, txtSuffixBase, lblSuffixStart, nudSuffixStart,
+                chkAutoClearDest,
+                chkAutoClearSources,
+                lblPrefix, cmbPrefixMode, txtPrefix, txtPrefixBase, lblStartNum, nudPrefixStart, nudPrefixPad, cmbPrefixSep,
+                lblSuffix, cmbSuffixMode, txtSuffix, txtSuffixBase, lblSuffixStart, nudSuffixStart, nudSuffixPad, cmbSuffixSep,
                 chkPreview
             });
 
@@ -564,9 +785,10 @@ namespace ManyCopy
             LayoutBottom();
             ResumeLayout(true);
 
-            // Theme on load
+            // Theme + accent on load
             var saved = LoadTheme();
             cmbTheme.SelectedIndex = saved switch { ThemeMode.Light => 1, ThemeMode.Dark => 2, _ => 0 };
+            cmbAccent.SelectedIndex = Theme.CurrentAccent switch { AccentPreset.Default => 0, AccentPreset.Blue => 1, AccentPreset.Green => 2, AccentPreset.Purple => 3, AccentPreset.Orange => 4, AccentPreset.Red => 5, _ => 0 };
             Theme.ApplyTo(this, saved);
         }
 
@@ -576,10 +798,13 @@ namespace ManyCopy
             else if (e.Control && (e.KeyCode == Keys.Y || (e.Shift && e.KeyCode == Keys.Z))) { DoRedo(); e.Handled = true; }
         }
 
-        private void PickSource()
+        private void PickSources()
         {
-            using var ofd = new OpenFileDialog { Title = "Select source file", Filter = "All files (*.*)|*.*" };
-            if (ofd.ShowDialog(this) == DialogResult.OK) txtSource.Text = ofd.FileName;
+            using var ofd = new OpenFileDialog { Title = "Select source files", Filter = "All files (*.*)|*.*", Multiselect = true };
+            if (ofd.ShowDialog(this) == DialogResult.OK)
+            {
+                AddSources(ofd.FileNames.Where(File.Exists));
+            }
         }
 
         private void PickRoot()
@@ -632,22 +857,123 @@ namespace ManyCopy
 
         private void AddDestPath(string? path)
         {
-            if (!string.IsNullOrWhiteSpace(path) && !listDest.Items.Contains(path))
-                listDest.Items.Add(path);
+            if (string.IsNullOrWhiteSpace(path)) return;
+            try { path = Path.GetFullPath(path); } catch { }
+            if (_destSet.Add(path)) listDest.Items.Add(path);
+        }
+
+        private void AddSources(IEnumerable<string> paths)
+        {
+            foreach (var p in paths)
+            {
+                try
+                {
+                    var full = Path.GetFullPath(p);
+                    if (File.Exists(full) && !_sources.Contains(full, StringComparer.OrdinalIgnoreCase)) _sources.Add(full);
+                }
+                catch { }
+            }
+            _sources.Sort(StringComparer.OrdinalIgnoreCase);
+            RefreshSourceText();
+        }
+
+        private List<string> GetSelectedSources()
+        {
+            if (_sources.Count > 0) return new List<string>(_sources);
+            var s = (txtSource.Text ?? string.Empty).Trim();
+            if (!string.IsNullOrWhiteSpace(s) && File.Exists(s)) return new List<string> { s };
+            return new List<string>();
+        }
+
+        private void RefreshSourceText()
+        {
+            if (_sources.Count == 0)
+            {
+                txtSource.Text = string.Empty;
+                srcTip.SetToolTip(txtSource, string.Empty);
+                return;
+            }
+
+            // Compose a single-line display of basenames, trimming if too long
+            var names = _sources.Select(Path.GetFileName).ToList();
+            string display = ComposeInlineList(names, 120);
+            txtSource.Text = display;
+            srcTip.SetToolTip(txtSource, string.Join(", ", names));
+        }
+
+        private static string ComposeInlineList(IReadOnlyList<string> items, int maxLen)
+        {
+            if (items.Count == 1) return items[0];
+            var parts = new List<string>();
+            int len = 0;
+            int extra = 0;
+            foreach (var it in items)
+            {
+                int add = (parts.Count > 0 ? 2 : 0) + it.Length; // comma+space + item
+                if (len + add > maxLen)
+                {
+                    extra++;
+                    continue;
+                }
+                parts.Add(it);
+                len += add;
+            }
+            if (extra > 0) parts.Add($"+{extra} more");
+            return string.Join(", ", parts);
+        }
+
+        private void BuildSourceMenu()
+        {
+            srcMenu.Items.Clear();
+            if (_sources.Count == 0)
+            {
+                var add = new ToolStripMenuItem("Add Files...");
+                add.Click += (_, __) => PickSources();
+                srcMenu.Items.Add(add);
+                return;
+            }
+
+            int shown = 0;
+            foreach (var path in _sources)
+            {
+                if (shown >= 15) { var more = new ToolStripMenuItem("(more items not shown)") { Enabled = false }; srcMenu.Items.Add(more); break; }
+                var name = Path.GetFileName(path);
+                var item = new ToolStripMenuItem(name) { Tag = path, ToolTipText = path };
+                item.Click += (_, __) => { _sources.Remove((string)item.Tag!); RefreshSourceText(); };
+                srcMenu.Items.Add(item);
+                shown++;
+            }
+
+            srcMenu.Items.Add(new ToolStripSeparator());
+            var addFiles = new ToolStripMenuItem("Add Files...");
+            addFiles.Click += (_, __) => PickSources();
+            var clearAll = new ToolStripMenuItem("Clear All");
+            clearAll.Click += (_, __) => { _sources.Clear(); RefreshSourceText(); };
+            srcMenu.Items.Add(addFiles);
+            srcMenu.Items.Add(clearAll);
         }
 
         private void RemoveSelected()
         {
             var items = listDest.SelectedItems.Cast<object?>().ToList();
-            foreach (var it in items) if (it is not null) listDest.Items.Remove(it);
+            foreach (var it in items)
+            {
+                if (it is string s)
+                {
+                    listDest.Items.Remove(s);
+                    _destSet.Remove(s);
+                }
+            }
         }
+
+        
 
         private void RunCopyOrPreview()
         {
             logBox.Clear();
 
-            var src = (txtSource.Text ?? string.Empty).Trim();
-            if (string.IsNullOrWhiteSpace(src) || !File.Exists(src)) { Log("ERROR: Source file not found."); return; }
+            var sources = GetSelectedSources();
+            if (sources.Count == 0) { Log("ERROR: No source files selected."); return; }
             if (listDest.Items.Count == 0) { Log("ERROR: No destinations selected."); return; }
 
                         int prefixMode = cmbPrefixMode.SelectedIndex; // 0=None,1=Fixed,2=Numbered
@@ -666,7 +992,6 @@ namespace ManyCopy
 
             int idxPrefix = (int)nudPrefixStart.Value;
             int idxSuffix = (int)nudSuffixStart.Value;
-            string baseName = Path.GetFileName(src);
 
             var planned = new List<(string folder, string destFile, bool exists)>();
             foreach (var obj in listDest.Items.Cast<object?>())
@@ -678,10 +1003,36 @@ namespace ManyCopy
                     continue;
                 }
 
-                string finalName = NamingHelpers.BuildTargetName(baseName, useFixed, txtPrefix.Text, useRange, txtPrefixBase.Text, idxPrefix, (useSuffixFixed || useSuffixRange), (useSuffixRange ? (txtSuffixBase.Text + idxSuffix.ToString()) : txtSuffix.Text));
-                var dest = Path.Combine(folder, finalName);
+                // Build suffix text per destination
+                string suffixTextBase = string.Empty;
+                if (useSuffixFixed) suffixTextBase = txtSuffix.Text ?? string.Empty;
+                else if (useSuffixRange)
+                {
+                    var sNum = NamingHelpers.FormatRangeNumber(idxSuffix, (int)nudSuffixPad.Value);
+                    suffixTextBase = (txtSuffixBase.Text ?? string.Empty) + sNum;
+                }
+                string prefixSep = (cmbPrefixSep.Visible && cmbPrefixSep.SelectedIndex > 0) ? (string)cmbPrefixSep.SelectedItem! : string.Empty;
+                string suffixSep = (cmbSuffixSep.Visible && cmbSuffixSep.SelectedIndex > 0) ? (string)cmbSuffixSep.SelectedItem! : string.Empty;
 
-                planned.Add((folder, dest, File.Exists(dest)));
+                foreach (var srcFile in sources)
+                {
+                    string baseName = Path.GetFileName(srcFile);
+                    string finalName = NamingHelpers.BuildTargetName(
+                        baseName,
+                        useFixed, txtPrefix.Text,
+                        useRange, txtPrefixBase.Text, idxPrefix,
+                        (useSuffixFixed || useSuffixRange), suffixTextBase,
+                        prefixPadWidth: (int)nudPrefixPad.Value,
+                        suffixPadWidth: (int)nudSuffixPad.Value,
+                        prefixSeparator: prefixSep,
+                        suffixSeparator: suffixSep);
+                    var dest = Path.Combine(folder, finalName);
+
+                    if (!IsValidFileName(finalName) || IsPathTooLong(dest))
+                        planned.Add((folder, "<invalid>", false));
+                    else
+                        planned.Add((folder, dest, File.Exists(dest)));
+                }
                 if (useRange) idxPrefix++; if (useSuffixRange) idxSuffix++;
             }
 
@@ -689,10 +1040,10 @@ namespace ManyCopy
             {
                 int willOverwrite = planned.Count(p => p.exists);
                 int invalid = planned.Count(p => p.destFile == "<invalid>");
-                Log($"[PREVIEW] Source: {src}");
+                Log($"[PREVIEW] Sources: {sources.Count}");
                 foreach (var p in planned)
                 {
-                    if (p.destFile == "<invalid>") Log($"[PREVIEW] Skipped -> {p.folder} (folder missing)");
+                    if (p.destFile == "<invalid>") Log($"[PREVIEW] Skipped -> {p.folder} (invalid name or path)");
                     else Log($"[PREVIEW] {p.destFile}" + (p.exists ? "  [will overwrite]" : ""));
                 }
                 Log($"[PREVIEW] Total targets: {planned.Count}, Overwrites: {willOverwrite}, Invalid: {invalid}");
@@ -702,51 +1053,82 @@ namespace ManyCopy
 
             var entry = new HistoryEntry
             {
-                Source = src,
-                Description = $"Copy to {planned.Count} folder(s) at {DateTime.Now:t}",
+                Sources = sources,
+                Description = $"Copy {sources.Count} file(s) to {listDest.Items.Count} folder(s) at {DateTime.Now:t}",
                 Overwrite = chkOverwrite.Checked
             };
 
             int copied = 0, failed = 0, skipped = 0, backedUp = 0;
-            foreach (var p in planned)
+            idxPrefix = (int)nudPrefixStart.Value;
+            idxSuffix = (int)nudSuffixStart.Value;
+
+            foreach (var obj in listDest.Items.Cast<object?>())
             {
-                if (!Directory.Exists(p.folder))
-                {
-                    Log($"Skipped -> {p.folder} (folder missing)");
-                    skipped++; continue;
-                }
+                var folder = obj as string;
+                if (string.IsNullOrWhiteSpace(folder) || !Directory.Exists(folder))
+                { Log($"Skipped -> {folder} (folder missing)"); skipped++; continue; }
 
-                var rec = new CopyRecord { Destination = p.destFile };
-                try
+                // Compose once per destination
+                string suffixTextBase = string.Empty;
+                if (useSuffixFixed) suffixTextBase = txtSuffix.Text ?? string.Empty;
+                else if (useSuffixRange)
                 {
-                    if (File.Exists(p.destFile))
+                    var sNum = NamingHelpers.FormatRangeNumber(idxSuffix, (int)nudSuffixPad.Value);
+                    suffixTextBase = (txtSuffixBase.Text ?? string.Empty) + sNum;
+                }
+                string prefixSep = (cmbPrefixSep.Visible && cmbPrefixSep.SelectedIndex > 0) ? (string)cmbPrefixSep.SelectedItem! : string.Empty;
+                string suffixSep = (cmbSuffixSep.Visible && cmbSuffixSep.SelectedIndex > 0) ? (string)cmbSuffixSep.SelectedItem! : string.Empty;
+
+                foreach (var srcFile in sources)
+                {
+                    string baseName2 = Path.GetFileName(srcFile);
+                    string finalName2 = NamingHelpers.BuildTargetName(
+                        baseName2,
+                        useFixed, txtPrefix.Text,
+                        useRange, txtPrefixBase.Text, idxPrefix,
+                        (useSuffixFixed || useSuffixRange), suffixTextBase,
+                        prefixPadWidth: (int)nudPrefixPad.Value,
+                        suffixPadWidth: (int)nudSuffixPad.Value,
+                        prefixSeparator: prefixSep,
+                        suffixSeparator: suffixSep);
+                    var destPath = Path.Combine(folder, finalName2);
+
+                    var rec = new CopyRecord { Destination = destPath, Source = srcFile };
+                    try
                     {
-                        rec.HadExisting = true;
-                        if (chkOverwrite.Checked)
+                        if (File.Exists(destPath))
                         {
-                            rec.BackupPath = p.destFile + $".undo-bak-{DateTime.Now:yyyyMMddHHmmssfff}";
-                            try { File.Copy(p.destFile, rec.BackupPath, overwrite: false); backedUp++; }
-                            catch (Exception exBak) { Log($"WARN: Backup failed for {p.destFile}: {exBak.Message}"); }
+                            rec.HadExisting = true;
+                            if (chkOverwrite.Checked)
+                            {
+                                if (IsIdentical(srcFile, destPath)) { Log($"Skipped (identical) -> {folder}"); skipped++; continue; }
+                                rec.BackupPath = destPath + $".undo-bak-{DateTime.Now:yyyyMMddHHmmssfff}";
+                                try { File.Copy(destPath, rec.BackupPath, overwrite: false); backedUp++; }
+                                catch (Exception exBak) { Log($"WARN: Backup failed for {destPath}: {exBak.Message}"); }
+                            }
+                            else
+                            {
+                                Log($"Skipped -> {folder} (exists, overwrite off)");
+                                skipped++; continue;
+                            }
                         }
-                        else
-                        {
-                            Log($"Skipped -> {p.folder} (exists, overwrite off)");
-                            skipped++; continue;
-                        }
-                    }
 
-                    File.Copy(src, p.destFile, overwrite: chkOverwrite.Checked);
-                    entry.Ops.Add(rec);
-                    Log($"Copied -> {p.folder}");
-                    copied++;
+                        if (!CopyWithRetry(srcFile, destPath, chkOverwrite.Checked))
+                            throw new IOException("Copy failed after retries");
+                        entry.Ops.Add(rec);
+                        Log($"Copied -> {folder}: {Path.GetFileName(destPath)}");
+                        copied++;
+                    }
+                    catch (Exception ex)
+                    {
+                        Log($"FAILED -> {folder}: {ex.Message}");
+                        if (!string.IsNullOrWhiteSpace(rec.BackupPath) && File.Exists(rec.BackupPath))
+                        { try { File.Delete(rec.BackupPath); } catch { } rec.BackupPath = null; }
+                        failed++;
+                    }
                 }
-                catch (Exception ex)
-                {
-                    Log($"FAILED -> {p.folder}: {ex.Message}");
-                    if (!string.IsNullOrWhiteSpace(rec.BackupPath) && File.Exists(rec.BackupPath))
-                    { try { File.Delete(rec.BackupPath); } catch { } rec.BackupPath = null; }
-                    failed++;
-                }
+
+                if (useRange) idxPrefix++; if (useSuffixRange) idxSuffix++;
             }
 
             if (entry.Ops.Count > 0) { PushUndo(entry); _redo.Clear(); }
@@ -754,6 +1136,11 @@ namespace ManyCopy
             Log($"Done. Copied: {copied}, Skipped: {skipped}, Failed: {failed}. Backups created: {backedUp}.");
             if (chkOverwrite.Checked && backedUp > 0)
                 Log("Note: Undo will restore backups and remove new copies where appropriate.");
+            if (!chkPreview.Checked)
+            {
+                if (chkAutoClearDest.Checked) { listDest.Items.Clear(); _destSet.Clear(); Log("Destinations auto-cleared."); }
+                if (chkAutoClearSources.Checked) { _sources.Clear(); txtSource.Text = string.Empty; Log("Sources auto-cleared."); }
+            }
 
             Status($"Copied {copied} â€¢ Skipped {skipped} â€¢ Failed {failed} â€¢ Undo: {_undo.Count} Redo: {_redo.Count}");
         }
@@ -813,7 +1200,7 @@ namespace ManyCopy
                         catch (Exception exBak) { Log($"WARN: Backup failed for {rec.Destination}: {exBak.Message}"); }
                     }
 
-                    File.Copy(entry.Source, rec.Destination, overwrite: entry.Overwrite);
+                    File.Copy(rec.Source, rec.Destination, overwrite: entry.Overwrite);
                     copied++;
                 }
                 catch (Exception ex)
@@ -897,10 +1284,48 @@ namespace ManyCopy
                 int labelTop = logBox.Top - lblStatus.Height - 6;
                 lblStatus.Top = Math.Max(controlsBottom + 2, labelTop);
             }
+
+            // Right-align action buttons (Engage, Redo, Undo) with consistent gaps
+            try
+            {
+                int gap = 10;
+                int x = clientW - marginRight;
+                if (btnEngage != null)
+                {
+                    btnEngage.Left = x - btnEngage.Width;
+                    x = btnEngage.Left - gap;
+                }
+                if (btnRedo != null)
+                {
+                    btnRedo.Left = x - btnRedo.Width;
+                    x = btnRedo.Left - gap;
+                }
+                if (btnUndo != null)
+                {
+                    btnUndo.Left = x - btnUndo.Width;
+                }
+            }
+            catch { }
         }        private void Status(string msg) { lblStatus.Text = msg; }
 
         private string SettingsPath =>
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ManyCopy", "settings.txt");
+
+        
+
+        private void SaveLogToFile()
+        {
+            try
+            {
+                using var sfd = new SaveFileDialog { Filter = "Text files (*.txt)|*.txt|All files (*.*)|*.*", FileName = $"ManyCopy-Log-{DateTime.Now:yyyyMMdd-HHmmss}.txt" };
+                if (sfd.ShowDialog(this) == DialogResult.OK)
+                {
+                    File.WriteAllText(sfd.FileName, logBox.Text ?? string.Empty);
+                    Status("Log saved");
+                }
+            }
+            catch (Exception ex) { Status($"Save failed: {ex.Message}"); }
+        }
 
         private void SaveTheme(ThemeMode mode)
         {
@@ -908,7 +1333,7 @@ namespace ManyCopy
             {
                 var dir = Path.GetDirectoryName(SettingsPath)!;
                 if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
-                File.WriteAllText(SettingsPath, mode.ToString());
+                File.WriteAllText(SettingsPath, $"{mode};{Theme.CurrentAccent}");
             }
             catch { }
         }
@@ -920,17 +1345,64 @@ namespace ManyCopy
                 if (File.Exists(SettingsPath))
                 {
                     var s = (File.ReadAllText(SettingsPath) ?? "").Trim();
-                    if (Enum.TryParse<ThemeMode>(s, out var m)) return m;
+                    var parts = s.Split(';');
+                    ThemeMode mode = ThemeMode.Auto;
+                    if (parts.Length >= 1 && Enum.TryParse<ThemeMode>(parts[0], out var m)) mode = m;
+                    if (parts.Length >= 2 && Enum.TryParse<AccentPreset>(parts[1], out var acc)) Theme.SetAccent(acc);
+                    return mode;
                 }
             }
             catch { }
             return ThemeMode.Auto;
         }
-    
+
         protected override void OnDpiChanged(DpiChangedEventArgs e)
         {
             base.OnDpiChanged(e);
             try { PerformAutoScale(); LayoutBottom(); Invalidate(true); } catch { }
+        }
+
+        
+
+        private static bool IsValidFileName(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return false;
+            var invalid = Path.GetInvalidFileNameChars();
+            return name.All(ch => !invalid.Contains(ch));
+        }
+
+        private static bool IsPathTooLong(string path)
+        {
+            try { return path.Length > 260; } catch { return false; }
+        }
+
+        private static bool IsIdentical(string src, string dest)
+        {
+            try
+            {
+                var si = new FileInfo(src);
+                var di = new FileInfo(dest);
+                return si.Length == di.Length && si.LastWriteTimeUtc == di.LastWriteTimeUtc;
+            }
+            catch { return false; }
+        }
+
+        private static bool CopyWithRetry(string src, string dest, bool overwrite, int retries = 3, int delayMs = 120)
+        {
+            for (int attempt = 0; attempt < retries; attempt++)
+            {
+                try
+                {
+                    File.Copy(src, dest, overwrite: overwrite);
+                    return true;
+                }
+                catch
+                {
+                    if (attempt == retries - 1) return false;
+                    System.Threading.Thread.Sleep(delayMs);
+                }
+            }
+            return false;
         }
 
     }
@@ -939,17 +1411,20 @@ namespace ManyCopy
     internal sealed class CopyRecord
     {
         public string Destination { get; set; } = string.Empty;
+        public string Source { get; set; } = string.Empty;
         public bool HadExisting { get; set; } = false;
         public string? BackupPath { get; set; }
     }
 
     internal sealed class HistoryEntry
     {
-        public string Source { get; set; } = string.Empty;
+        public List<string> Sources { get; set; } = new();
         public bool Overwrite { get; set; }
         public string Description { get; set; } = string.Empty;
         public List<CopyRecord> Ops { get; set; } = new();
     }
+
+    
 
     // ================= Explorer multi-folder picker (COM coclass) =================
     internal static class ShellFolderPicker
@@ -1093,6 +1568,7 @@ namespace ManyCopy
         [Flags] private enum SIATTRIBFLAGS { SIATTRIBFLAGS_AND = 1, SIATTRIBFLAGS_OR = 2, SIATTRIBFLAGS_APPCOMPAT = 3 }
     }
 }
+
 
 
 
