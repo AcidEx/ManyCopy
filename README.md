@@ -1,4 +1,4 @@
-﻿# ManyCopy
+# ManyCopy
 
 ManyCopy is a Windows utility that copies a single source file into many
 folders. The app supports sequential folder generation with optional range
@@ -6,7 +6,7 @@ suffixes, configurable padding for folder numbers (e.g. `001`, `002`, `003`),
 and a log window that records every operation so you can quickly review what
 ran.
 
-Current release: **1.1.6.1**. Review the [changelog](CHANGELOG.md) for a
+Current release: **1.1.7**. Review the [changelog](CHANGELOG.md) for a
 breakdown of recent updates.
 
 ## Requirements
@@ -69,3 +69,11 @@ ManyCopy is released under the [MIT License](LICENSE).
 - Run: `dotnet test -c Release`
 
 If a newer SDK is installed, `global.json` will keep tooling on a compatible 8.0 feature band.
+
+## What's New in 1.1.7
+- Accent colors with bold Light/Dark tints (Default/Blue/Green/Purple/Orange/Red).
+- Multi-file sources: add via Browse or drag+drop; inline list in source bar.
+- Remove specific source (menu) and Clear sources button; right-click Source for full menu.
+- Auto-clear toggles for Sources and Destinations after copy.
+- Dark-mode checkbox background polish; Range Helper box tightened.
+- Bottom action buttons (Undo/Redo/Engage) aligned flush-right.
