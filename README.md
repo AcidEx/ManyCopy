@@ -2,7 +2,7 @@
 
 *DISCLAIMER*
 
-"I - AcidEx - have used OpenAI's Codex to build this app from version1.1.5-1.1.7. 
+"I - AcidEx - have used OpenAI's Codex to build this app from version 1.1.5 onwards. 
 prior builds were made by ChatGPT5 under my direction. 
 The entire idea, design, and testing of this app was done by myself, but the coding was done by Codex."
 
