@@ -113,8 +113,6 @@ jobs:
           $publishDirectory = Join-Path $pwd 'bin/Release/net8.0-windows/win-x64/publish'
           $executable = Join-Path $publishDirectory 'ManyCopy.exe'
           $pfxPath = Join-Path $env:RUNNER_TEMP 'manycopy-codesign.pfx'
-          $rootStore = $null
-          $trustedRoot = $null
 
           try {
             [IO.File]::WriteAllBytes($pfxPath, [Convert]::FromBase64String($env:CODESIGN_PFX_BASE64))
@@ -128,38 +126,29 @@ jobs:
               throw 'The PFX did not contain a code-signing certificate with a private key.'
             }
 
-            if ($certificate.Subject -eq $certificate.Issuer) {
-              # GitHub's clean Windows runners do not know our self-signed root.
-              # Trust only its public certificate for this ephemeral job so that
-              # Authenticode verification can distinguish a valid signature from
-              # an untrusted chain.
-              $trustedRoot = [Security.Cryptography.X509Certificates.X509Certificate2]::new(
-                $certificate.Export([Security.Cryptography.X509Certificates.X509ContentType]::Cert)
-              )
-              $rootStore = [Security.Cryptography.X509Certificates.X509Store]::new(
-                [Security.Cryptography.X509Certificates.StoreName]::Root,
-                [Security.Cryptography.X509Certificates.StoreLocation]::CurrentUser
-              )
-              $rootStore.Open([Security.Cryptography.X509Certificates.OpenFlags]::ReadWrite)
-              $rootStore.Add($trustedRoot)
-            }
-
             $subject = if ($env:CODESIGN_SUBJECT) { $env:CODESIGN_SUBJECT } else { $certificate.Subject }
             $timestampServer = if ($certificate.Subject -eq $certificate.Issuer) { '' } else { 'http://timestamp.digicert.com' }
             & .\tools\sign.ps1 -File $executable -Subject $subject -TimeStampServer $timestampServer -RequireExistingCertificate
 
             $signature = Get-AuthenticodeSignature -LiteralPath $executable
-            if ($signature.Status -ne 'Valid') {
+            $signerMatches = $signature.SignerCertificate -and
+              $signature.SignerCertificate.Thumbprint -eq $certificate.Thumbprint
+            if (-not $signerMatches) {
+              throw 'Signature verification failed: the executable was not signed by the imported certificate.'
+            }
+
+            # A clean runner cannot trust a private self-signed root without an
+            # interactive prompt. UnknownError is acceptable only for that exact
+            # chain error; integrity errors such as HashMismatch still fail.
+            $expectedSelfSignedTrustError =
+              $certificate.Subject -eq $certificate.Issuer -and
+              $signature.Status -eq 'UnknownError' -and
+              $signature.StatusMessage -match 'root certificate which is not trusted'
+            if ($signature.Status -ne 'Valid' -and -not $expectedSelfSignedTrustError) {
               throw "Signature verification failed: $($signature.StatusMessage)"
             }
           }
           finally {
-            if ($rootStore) {
-              if ($trustedRoot) {
-                $rootStore.Remove($trustedRoot)
-              }
-              $rootStore.Close()
-            }
             Remove-Item -LiteralPath $pfxPath -Force -ErrorAction SilentlyContinue
           }
 
