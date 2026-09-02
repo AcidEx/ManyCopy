@@ -2,7 +2,7 @@ param(
   [string]$Configuration = 'Release',
   [string]$Runtime = 'win-x64',
   [switch]$CleanFirst = $true,
-  [string]$Subject = 'CN=ManyCopy Dev (Self-Signed)'
+  [string]$Subject = 'CN=ManyCopy'
 )
 
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path | Split-Path -Parent
