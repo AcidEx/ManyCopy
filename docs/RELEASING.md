@@ -26,6 +26,10 @@ and uploads a workflow artifact. It never creates a public GitHub release.
 If signing secrets are unavailable, the artifact name ends in
 `-UNSIGNED.zip`.
 
+Pull requests that change the release workflow, packaging scripts, signing
+script, or project version run the same non-publishing dry-run path
+automatically.
+
 ## Publish a release
 
 1. Update the version in `ManyCopy.csproj`, the changelog, and the README.
