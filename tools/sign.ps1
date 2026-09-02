@@ -24,10 +24,14 @@ if (-not (Test-Path -LiteralPath $File)) { throw "File not found: $File" }
 $cert = Get-OrCreate-CodeSignCert -Subject $Subject -Recreate:$RecreateCert -RequireExisting:$RequireExistingCertificate
 Write-Host "Using certificate: $($cert.Subject)  Thumbprint=$($cert.Thumbprint)  Expires=$($cert.NotAfter)"
 
-try {
-  $sig = Set-AuthenticodeSignature -FilePath $File -Certificate $cert -HashAlgorithm SHA256 -TimestampServer $TimeStampServer -ErrorAction Stop
-} catch {
-  Write-Warning "Signing failed without timestamp server. Retrying without timestamp... ($_ )"
+if ($TimeStampServer) {
+  try {
+    $sig = Set-AuthenticodeSignature -FilePath $File -Certificate $cert -HashAlgorithm SHA256 -TimestampServer $TimeStampServer -ErrorAction Stop
+  } catch {
+    Write-Warning "Signing failed with the timestamp server. Retrying without timestamp... ($_ )"
+    $sig = Set-AuthenticodeSignature -FilePath $File -Certificate $cert -HashAlgorithm SHA256
+  }
+} else {
   $sig = Set-AuthenticodeSignature -FilePath $File -Certificate $cert -HashAlgorithm SHA256
 }
 

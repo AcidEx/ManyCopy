@@ -127,10 +127,24 @@ jobs:
             }
 
             $subject = if ($env:CODESIGN_SUBJECT) { $env:CODESIGN_SUBJECT } else { $certificate.Subject }
-            & .\tools\sign.ps1 -File $executable -Subject $subject -RequireExistingCertificate
+            $timestampServer = if ($certificate.Subject -eq $certificate.Issuer) { '' } else { 'http://timestamp.digicert.com' }
+            & .\tools\sign.ps1 -File $executable -Subject $subject -TimeStampServer $timestampServer -RequireExistingCertificate
 
             $signature = Get-AuthenticodeSignature -LiteralPath $executable
-            if ($signature.Status -ne 'Valid') {
+            $signerMatches = $signature.SignerCertificate -and
+              $signature.SignerCertificate.Thumbprint -eq $certificate.Thumbprint
+            if (-not $signerMatches) {
+              throw 'Signature verification failed: the executable was not signed by the imported certificate.'
+            }
+
+            # A clean runner cannot trust a private self-signed root without an
+            # interactive prompt. UnknownError is acceptable only for that exact
+            # chain error; integrity errors such as HashMismatch still fail.
+            $expectedSelfSignedTrustError =
+              $certificate.Subject -eq $certificate.Issuer -and
+              $signature.Status -eq 'UnknownError' -and
+              $signature.StatusMessage -match 'root certificate which is not trusted'
+            if ($signature.Status -ne 'Valid' -and -not $expectedSelfSignedTrustError) {
               throw "Signature verification failed: $($signature.StatusMessage)"
             }
           }
