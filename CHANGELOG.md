@@ -6,13 +6,30 @@ and uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.1.9] - 2026-09-03
+
+### Added
+- Added transactional file staging and SHA-256 integrity checks for copy, overwrite, Undo, and Redo.
+- Added regression tests covering new copies, overwrites, changed destinations, missing backups, and Redo safeguards.
+- Added a 10,000-folder safety limit to the range helper.
+
 ### Changed
 - Consolidated CI and release automation into one workflow for each purpose.
 - Added a manual release dry run and strict tag, version, branch, signing, and signature validation.
 - Reduced published release output to one canonical versioned Windows x64 package.
+- Made pull-request release checks unsigned and reduced their token permissions to read-only.
+- Corrected preview reporting for existing files when overwrite is disabled.
+
+### Fixed
+- Stopped overwrite when a verified backup cannot be created.
+- Prevented Undo and Redo from deleting or replacing files changed outside ManyCopy.
+- Kept recovery backups when restoration fails and cleaned them when history expires or the app closes.
+- Replaced corrupted bullet characters in copy status messages.
+- Prevented integer overflow in extreme folder ranges.
 
 ### Removed
 - Removed duplicate CI and obsolete 1.1.6 branch-publishing workflows.
+- Removed unused test dependencies, dead log-saving code, stale handover notes, and the obsolete branch timestamp file.
 
 ## [1.1.8] - 2026-09-03
 ### Fixed

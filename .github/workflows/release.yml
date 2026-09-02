@@ -18,7 +18,7 @@ on:
         type: string
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: release-${{ github.ref }}
@@ -28,6 +28,10 @@ jobs:
   package:
     name: Build release package
     runs-on: windows-latest
+    outputs:
+      package_name: ${{ steps.package.outputs.package_name }}
+      signed: ${{ steps.signing.outputs.signed }}
+      version: ${{ steps.metadata.outputs.version }}
 
     steps:
       - name: Check out source
@@ -90,6 +94,7 @@ jobs:
         run: dotnet publish ManyCopy.csproj -c Release -r win-x64 --no-restore --nologo
 
       - name: Sign executable
+        if: ${{ github.event_name != 'pull_request' }}
         id: signing
         shell: pwsh
         env:
@@ -174,22 +179,34 @@ jobs:
           "package_name=$($package.Name)" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
           "package_path=$($package.Path)" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 
-      - name: Upload dry-run artifact
-        if: ${{ github.ref_type != 'tag' }}
+      - name: Upload package artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.package.outputs.package_name }}
           path: ${{ steps.package.outputs.package_path }}
           if-no-files-found: error
 
+  publish:
+    name: Publish GitHub release
+    if: ${{ github.ref_type == 'tag' && needs.package.outputs.signed == 'true' }}
+    needs: package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download signed package
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.package.outputs.package_name }}
+          path: release-artifacts
+
       - name: Publish GitHub release
-        if: ${{ github.ref_type == 'tag' && steps.signing.outputs.signed == 'true' }}
         uses: softprops/action-gh-release@v2
         with:
-          name: ManyCopy ${{ steps.metadata.outputs.version }}
+          name: ManyCopy ${{ needs.package.outputs.version }}
           generate_release_notes: true
           fail_on_unmatched_files: true
           overwrite_files: true
-          files: ${{ steps.package.outputs.package_path }}
+          files: release-artifacts/${{ needs.package.outputs.package_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

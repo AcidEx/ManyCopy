@@ -81,7 +81,6 @@ namespace ManyCopy.Tests
                 useSuffix: true,
                 suffix: "rev",
                 prefixPadWidth: 3,
-                suffixPadWidth: 0,
                 prefixSeparator: "-",
                 suffixSeparator: "_");
             // prefix: job-005-, then base name, then _rev
