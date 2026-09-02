@@ -1,8 +1,14 @@
 # Maintenance Notes
 
-All of the previously logged clean-up items have now been addressed in the codebase. The
-range helper log message clearly states when folders are created, undo history trimming
-discards the oldest entries instead of hanging, the stale COM interop comment has been
-removed from the project file, and manual verification covers the `BuildTargetName`
-helper as well as the range padding helpers. No outstanding follow-up work is currently
-tracked for ManyCopy.
+## Completed for 1.1.8
+
+- Removed the two nullable-reference build warnings carried over from 1.1.7.
+- Corrected stale version references in the README.
+- Restored the missing 1.1.7 changelog entry.
+- Aligned release signing with the installed `CN=ManyCopy` certificate.
+
+## Possible future work
+
+- Consider a richer source-file list that supports direct removal of individual items.
+- Add UI automation in addition to the existing naming-helper tests.
+- Use trusted code signing for public releases when a suitable certificate is available.

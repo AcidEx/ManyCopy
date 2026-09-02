@@ -14,7 +14,7 @@ suffixes, configurable padding for folder numbers (e.g. `001`, `002`, `003`),
 and a log window that records every operation so you can quickly review what
 ran.
 
-Current release: **1.1.7**. Review the [changelog](CHANGELOG.md) for a
+Current release: **1.1.8**. Review the [changelog](CHANGELOG.md) for a
 breakdown of recent updates.
 
 ## Requirements
@@ -46,12 +46,17 @@ dotnet publish ManyCopy.csproj -c Release
 
 After building or publishing, launch the executable from the `bin` or
 `publish` directory to verify that the splash screen still shows the progress
-bar and `1.1.6.1` version label before ManyCopy opens.
+bar and `1.1.8` version label before ManyCopy opens.
 
 ## Verification
 
-Automated tests are included. You can run `dotnet test -c Release` from the
-repository root. In addition, perform a quick manual smoke test:
+Automated tests are included. From the repository root, run:
+
+```bash
+dotnet test tests/ManyCopy.Tests/ManyCopy.Tests.csproj -c Release
+```
+
+In addition, perform a quick manual smoke test:
 
 1. Start the application and confirm the splash screen shows the progress bar
    and version number.
@@ -74,9 +79,14 @@ ManyCopy is released under the [MIT License](LICENSE).
 
 - SDK: Repo pinned via `global.json` to .NET SDK 8.0.414.
 - Restore: `dotnet restore`
-- Run: `dotnet test -c Release`
+- Run: `dotnet test tests/ManyCopy.Tests/ManyCopy.Tests.csproj -c Release`
 
 If a newer SDK is installed, `global.json` will keep tooling on a compatible 8.0 feature band.
+
+## What's New in 1.1.8
+
+- Cleaned up nullable-reference handling so release builds complete without warnings.
+- Corrected and synchronized release documentation.
 
 ## What's New in 1.1.7
 - Accent colors with bold Light/Dark tints (Default/Blue/Green/Purple/Orange/Red).

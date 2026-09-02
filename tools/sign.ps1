@@ -1,6 +1,6 @@
 param(
   [Parameter(Mandatory=$true)][string]$File,
-  [string]$Subject = 'CN=ManyCopy Dev (Self-Signed)',
+  [string]$Subject = 'CN=ManyCopy',
   [string]$TimeStampServer = 'http://timestamp.digicert.com',
   [switch]$RecreateCert
 )
@@ -21,10 +21,10 @@ $cert = Get-OrCreate-CodeSignCert -Subject $Subject -Recreate:$RecreateCert
 Write-Host "Using certificate: $($cert.Subject)  Thumbprint=$($cert.Thumbprint)  Expires=$($cert.NotAfter)"
 
 try {
-  $sig = Set-AuthenticodeSignature -FilePath $File -Certificate $cert -TimestampServer $TimeStampServer -ErrorAction Stop
+  $sig = Set-AuthenticodeSignature -FilePath $File -Certificate $cert -HashAlgorithm SHA256 -TimestampServer $TimeStampServer -ErrorAction Stop
 } catch {
   Write-Warning "Signing failed without timestamp server. Retrying without timestamp... ($_ )"
-  $sig = Set-AuthenticodeSignature -FilePath $File -Certificate $cert
+  $sig = Set-AuthenticodeSignature -FilePath $File -Certificate $cert -HashAlgorithm SHA256
 }
 
 Write-Host "Signature Status: $($sig.Status) | $($sig.StatusMessage)"

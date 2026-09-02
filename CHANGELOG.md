@@ -6,6 +6,24 @@ and uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.1.8] - 2026-09-03
+### Fixed
+- Removed nullable-reference warnings from the splash-image lookup and source-file display code.
+- Corrected stale version references and restored the missing 1.1.7 release history in the documentation.
+- Aligned the signing scripts with the existing `CN=ManyCopy` code-signing certificate and an explicit SHA-256 digest.
+
+## [1.1.7] - 2025-10-09
+### Added
+- Accent color choices with light and dark theme variants.
+- Multi-file source selection through browsing or drag and drop, with remove and clear controls.
+- Optional automatic clearing of sources and destinations after copying.
+
+### Changed
+- Tightened the range-helper layout and kept the bottom action buttons aligned when resizing.
+
+### Fixed
+- Matched checkbox and radio-button backgrounds to their parent controls in dark mode.
+
 ## [1.1.6.1] - 2025-10-07
 ### Fixed
 - Rebuilt self-contained Windows x64 executable and verified tests.

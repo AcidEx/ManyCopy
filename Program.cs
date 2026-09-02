@@ -130,7 +130,7 @@ namespace ManyCopy
                 var candidates = new[] { "Splash@2x.png", "splash@2x.png", "splash.png", "splash.jpg", "splash.webp", "Splash.png", "Splash.jpg", "Splash.webp" };
                 foreach (var name in candidates)
                 {
-                    if (scale < 1.5f && (name?.IndexOf("@2x", StringComparison.OrdinalIgnoreCase) ?? -1) >= 0) continue;
+                    if (scale < 1.5f && name.Contains("@2x", StringComparison.OrdinalIgnoreCase)) continue;
                     var p = Path.Combine(assets, name);
                     if (File.Exists(p)) { _bg = Image.FromFile(p); return; }
                 }
@@ -895,7 +895,7 @@ namespace ManyCopy
             }
 
             // Compose a single-line display of basenames, trimming if too long
-            var names = _sources.Select(Path.GetFileName).ToList();
+            var names = _sources.Select(path => Path.GetFileName(path) ?? path).ToList();
             string display = ComposeInlineList(names, 120);
             txtSource.Text = display;
             srcTip.SetToolTip(txtSource, string.Join(", ", names));
