@@ -145,7 +145,8 @@ jobs:
             }
 
             $subject = if ($env:CODESIGN_SUBJECT) { $env:CODESIGN_SUBJECT } else { $certificate.Subject }
-            & .\tools\sign.ps1 -File $executable -Subject $subject -RequireExistingCertificate
+            $timestampServer = if ($certificate.Subject -eq $certificate.Issuer) { '' } else { 'http://timestamp.digicert.com' }
+            & .\tools\sign.ps1 -File $executable -Subject $subject -TimeStampServer $timestampServer -RequireExistingCertificate
 
             $signature = Get-AuthenticodeSignature -LiteralPath $executable
             if ($signature.Status -ne 'Valid') {
