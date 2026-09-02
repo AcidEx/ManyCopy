@@ -71,6 +71,8 @@ Issues and pull requests are welcome! Before sending changes, please:
 1. Update `CHANGELOG.md` with a summary of your changes.
 2. Update this README when you add or modify user-facing functionality.
 
+Release maintainers should follow the [release process](docs/RELEASING.md).
+
 ## License
 
 ManyCopy is released under the [MIT License](LICENSE).
