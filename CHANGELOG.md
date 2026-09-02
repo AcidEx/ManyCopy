@@ -6,6 +6,14 @@ and uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- Consolidated CI and release automation into one workflow for each purpose.
+- Added a manual release dry run and strict tag, version, branch, signing, and signature validation.
+- Reduced published release output to one canonical versioned Windows x64 package.
+
+### Removed
+- Removed duplicate CI and obsolete 1.1.6 branch-publishing workflows.
+
 ## [1.1.8] - 2026-09-03
 ### Fixed
 - Removed nullable-reference warnings from the splash-image lookup and source-file display code.
