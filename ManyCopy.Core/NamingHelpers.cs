@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 
@@ -46,10 +47,10 @@ namespace ManyCopy.Core
         {
             if (padWidth > 0)
             {
-                return value.ToString($"D{padWidth}");
+                return value.ToString($"D{padWidth}", CultureInfo.InvariantCulture);
             }
 
-            return value.ToString();
+            return value.ToString(CultureInfo.InvariantCulture);
         }
 
         /// <summary>
@@ -62,7 +63,6 @@ namespace ManyCopy.Core
             bool useRange, string? rangeBase, int index,
             bool useSuffix, string? suffix,
             int prefixPadWidth = 0,
-            int suffixPadWidth = 0,
             string? prefixSeparator = null,
             string? suffixSeparator = null)
         {
@@ -84,9 +84,6 @@ namespace ManyCopy.Core
             if (useSuffix)
             {
                 var sufBase = SanitizeFileSegment(suffix);
-                // When suffixPadWidth > 0 and suffix contains a trailing number placeholder,
-                // the caller should have already provided the numeric string. We still allow
-                // pure text suffixes here.
                 suffixPart = sufBase;
             }
 
@@ -105,6 +102,6 @@ namespace ManyCopy.Core
             bool useFixed, string? fixedPrefix,
             bool useRange, string? rangeBase, int index,
             bool useSuffix, string? suffix)
-            => BuildTargetName(baseName, useFixed, fixedPrefix, useRange, rangeBase, index, useSuffix, suffix, 0, 0, null, null);
+            => BuildTargetName(baseName, useFixed, fixedPrefix, useRange, rangeBase, index, useSuffix, suffix, 0, null, null);
     }
 }

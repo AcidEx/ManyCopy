@@ -23,6 +23,7 @@ packages/
 
 # Publish outputs
 **/publish/
+artifacts/
 
 # OS files
 Thumbs.db

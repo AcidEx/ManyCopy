@@ -27,8 +27,8 @@ If signing secrets are unavailable, the artifact name ends in
 `-UNSIGNED.zip`.
 
 Pull requests that change the release workflow, packaging scripts, signing
-script, or project version run the same non-publishing dry-run path
-automatically.
+script, or project version run an unsigned, read-only dry run automatically.
+Signing credentials are not supplied to the pull-request path.
 
 ## Publish a release
 

@@ -14,7 +14,7 @@ suffixes, configurable padding for folder numbers (e.g. `001`, `002`, `003`),
 and a log window that records every operation so you can quickly review what
 ran.
 
-Current release: **1.1.8**. Review the [changelog](CHANGELOG.md) for a
+Current release: **1.1.9**. Review the [changelog](CHANGELOG.md) for a
 breakdown of recent updates.
 
 ## Requirements
@@ -46,7 +46,7 @@ dotnet publish ManyCopy.csproj -c Release
 
 After building or publishing, launch the executable from the `bin` or
 `publish` directory to verify that the splash screen still shows the progress
-bar and `1.1.8` version label before ManyCopy opens.
+bar and `1.1.9` version label before ManyCopy opens.
 
 ## Verification
 
@@ -84,6 +84,13 @@ ManyCopy is released under the [MIT License](LICENSE).
 - Run: `dotnet test tests/ManyCopy.Tests/ManyCopy.Tests.csproj -c Release`
 
 If a newer SDK is installed, `global.json` will keep tooling on a compatible 8.0 feature band.
+
+## What's New in 1.1.9
+
+- Made overwrite, Undo, and Redo transactional and integrity-checked.
+- Protected files changed outside ManyCopy from being removed by Undo or overwritten by Redo.
+- Cleaned up expired backup files, corrected preview messages, and guarded oversized folder ranges.
+- Kept signing credentials out of pull-request release checks.
 
 ## What's New in 1.1.8
 

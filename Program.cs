@@ -155,7 +155,7 @@ namespace ManyCopy
                 }
 
                 var info = typeof(Program).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? string.Empty;
-                var shortInfo = info.Split('+','-',' ')[0];
+                var shortInfo = info.Split('+', '-', ' ')[0];
                 if (Version.TryParse(shortInfo, out var v))
                 {
                     // Include revision when available
@@ -351,15 +351,15 @@ namespace ManyCopy
                 Text = Color.Black,
                 Accent = accent,
                 InputBg = Blend(Color.White, accent, 0.28),
-                InputBorder = Blend(Color.FromArgb(200,200,200), accent, 0.24),
+                InputBorder = Blend(Color.FromArgb(200, 200, 200), accent, 0.24),
                 LogBg = Blend(Color.White, accent, 0.22),
 
                 ButtonBg = Blend(SystemColors.Control, accent, 0.36),
                 ButtonText = Color.Black,
-                ButtonBorder = Blend(Color.FromArgb(180,180,180), accent, 0.30),
+                ButtonBorder = Blend(Color.FromArgb(180, 180, 180), accent, 0.30),
                 ButtonBgHover = Blend(SystemColors.ControlLight, accent, 0.38),
                 ButtonBgDown = Blend(SystemColors.ControlDark, accent, 0.34),
-                DisabledText = Color.FromArgb(140,140,140),
+                DisabledText = Color.FromArgb(140, 140, 140),
 
                 PrimaryBg = accent,
                 PrimaryText = Color.White,
@@ -494,7 +494,7 @@ namespace ManyCopy
         private Button btnRemoveSel = null!;
         private Button btnClear = null!;
 
-                private CheckBox chkOverwrite = null!;
+        private CheckBox chkOverwrite = null!;
         private CheckBox chkAutoClearDest = null!;
         private CheckBox chkAutoClearSources = null!;
         // Prefix controls (mode dropdown replacing separate checkboxes)
@@ -539,7 +539,7 @@ namespace ManyCopy
         public MainForm()
         {
             SuspendLayout();
-            { var info = typeof(Program).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? string.Empty; var shortInfo = info.Split('+','-',' ')[0]; if (Version.TryParse(shortInfo, out var v)) { shortInfo = v.Build >= 0 ? $"{v.Major}.{v.Minor}.{v.Build}" : $"{v.Major}.{v.Minor}"; if (shortInfo.EndsWith(".0")) shortInfo = shortInfo.TrimEnd('0').TrimEnd('.'); } if (string.IsNullOrWhiteSpace(shortInfo)) { shortInfo = typeof(Program).Assembly.GetName().Version?.ToString() ?? string.Empty; } Text = $"ManyCopy v{shortInfo} - Copy Files to Many Folders"; }
+            { var info = typeof(Program).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? string.Empty; var shortInfo = info.Split('+', '-', ' ')[0]; if (Version.TryParse(shortInfo, out var v)) { shortInfo = v.Build >= 0 ? $"{v.Major}.{v.Minor}.{v.Build}" : $"{v.Major}.{v.Minor}"; if (shortInfo.EndsWith(".0")) shortInfo = shortInfo.TrimEnd('0').TrimEnd('.'); } if (string.IsNullOrWhiteSpace(shortInfo)) { shortInfo = typeof(Program).Assembly.GetName().Version?.ToString() ?? string.Empty; } Text = $"ManyCopy v{shortInfo} - Copy Files to Many Folders"; }
             // Use the executable's icon for the window and taskbar
             try { this.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { }
             Width = 1000;
@@ -688,7 +688,7 @@ namespace ManyCopy
             Controls.AddRange(new Control[] { lblDest, listDest, btnBrowseDest, btnRemoveSel, btnClear });
 
             // Options
-                        chkOverwrite = new CheckBox { Text = "Overwrite if exists", Left = 10, Top = 650, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            chkOverwrite = new CheckBox { Text = "Overwrite if exists", Left = 10, Top = 650, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
             // Place auto-clear toggles near their related sections
             chkAutoClearSources = new CheckBox { Text = "Auto-clear sources after copy", Left = 10, Top = 26, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
             chkAutoClearDest = new CheckBox { Text = "Auto-clear destinations after copy", Left = 10, Top = 215, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
@@ -826,12 +826,20 @@ namespace ManyCopy
             if (!int.TryParse(startText, out var start) ||
                 !int.TryParse(endText, out var end)) { Log("ERROR: Start/End must be whole numbers."); return; }
             if (start > end) { Log("ERROR: Start number greater than end number."); return; }
+            const int maximumRangeSize = 10_000;
+            long rangeSize = (long)end - start + 1;
+            if (rangeSize > maximumRangeSize)
+            {
+                Log($"ERROR: A range can contain at most {maximumRangeSize:N0} folders.");
+                return;
+            }
 
             int padWidth = NamingHelpers.CalculateRangePadWidth(startText, endText);
 
             int added = 0, created = 0;
-            for (int i = start; i <= end; i++)
+            for (long offset = 0; offset < rangeSize; offset++)
             {
+                int i = (int)((long)start + offset);
                 string number = NamingHelpers.FormatRangeNumber(i, padWidth);
                 var folder = Path.Combine(root, $"{prefix}{number}");
                 if (!Directory.Exists(folder))
@@ -976,7 +984,7 @@ namespace ManyCopy
             if (sources.Count == 0) { Log("ERROR: No source files selected."); return; }
             if (listDest.Items.Count == 0) { Log("ERROR: No destinations selected."); return; }
 
-                        int prefixMode = cmbPrefixMode.SelectedIndex; // 0=None,1=Fixed,2=Numbered
+            int prefixMode = cmbPrefixMode.SelectedIndex; // 0=None,1=Fixed,2=Numbered
             int suffixMode = cmbSuffixMode.SelectedIndex; // 0=None,1=Fixed,2=Numbered
 
             bool useFixed = (prefixMode == 1) && !string.IsNullOrWhiteSpace(txtPrefix.Text);
@@ -1023,12 +1031,11 @@ namespace ManyCopy
                         useRange, txtPrefixBase.Text, idxPrefix,
                         (useSuffixFixed || useSuffixRange), suffixTextBase,
                         prefixPadWidth: (int)nudPrefixPad.Value,
-                        suffixPadWidth: (int)nudSuffixPad.Value,
                         prefixSeparator: prefixSep,
                         suffixSeparator: suffixSep);
                     var dest = Path.Combine(folder, finalName);
 
-                    if (!IsValidFileName(finalName) || IsPathTooLong(dest))
+                    if (!IsValidFileName(finalName))
                         planned.Add((folder, "<invalid>", false));
                     else
                         planned.Add((folder, dest, File.Exists(dest)));
@@ -1038,29 +1045,31 @@ namespace ManyCopy
 
             if (chkPreview.Checked)
             {
-                int willOverwrite = planned.Count(p => p.exists);
+                int existing = planned.Count(p => p.exists);
+                int willOverwrite = chkOverwrite.Checked ? existing : 0;
                 int invalid = planned.Count(p => p.destFile == "<invalid>");
                 Log($"[PREVIEW] Sources: {sources.Count}");
                 foreach (var p in planned)
                 {
                     if (p.destFile == "<invalid>") Log($"[PREVIEW] Skipped -> {p.folder} (invalid name or path)");
-                    else Log($"[PREVIEW] {p.destFile}" + (p.exists ? "  [will overwrite]" : ""));
+                    else if (p.exists && chkOverwrite.Checked) Log($"[PREVIEW] {p.destFile}  [will overwrite]");
+                    else if (p.exists) Log($"[PREVIEW] {p.destFile}  [exists - will skip]");
+                    else Log($"[PREVIEW] {p.destFile}");
                 }
-                Log($"[PREVIEW] Total targets: {planned.Count}, Overwrites: {willOverwrite}, Invalid: {invalid}");
-                Status($"Preview only â€¢ {planned.Count} targets â€¢ {willOverwrite} overwrites");
+                Log($"[PREVIEW] Total targets: {planned.Count}, Overwrites: {willOverwrite}, Existing skipped: {existing - willOverwrite}, Invalid: {invalid}");
+                Status($"Preview only | {planned.Count} targets | {willOverwrite} overwrites");
                 return;
             }
 
             var entry = new HistoryEntry
             {
-                Sources = sources,
-                Description = $"Copy {sources.Count} file(s) to {listDest.Items.Count} folder(s) at {DateTime.Now:t}",
                 Overwrite = chkOverwrite.Checked
             };
 
             int copied = 0, failed = 0, skipped = 0, backedUp = 0;
             idxPrefix = (int)nudPrefixStart.Value;
             idxSuffix = (int)nudSuffixStart.Value;
+            var sourceHashes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var obj in listDest.Items.Cast<object?>())
             {
@@ -1088,42 +1097,46 @@ namespace ManyCopy
                         useRange, txtPrefixBase.Text, idxPrefix,
                         (useSuffixFixed || useSuffixRange), suffixTextBase,
                         prefixPadWidth: (int)nudPrefixPad.Value,
-                        suffixPadWidth: (int)nudSuffixPad.Value,
                         prefixSeparator: prefixSep,
                         suffixSeparator: suffixSep);
                     var destPath = Path.Combine(folder, finalName2);
 
-                    var rec = new CopyRecord { Destination = destPath, Source = srcFile };
                     try
                     {
-                        if (File.Exists(destPath))
+                        if (!sourceHashes.TryGetValue(srcFile, out string? sourceHash))
                         {
-                            rec.HadExisting = true;
-                            if (chkOverwrite.Checked)
-                            {
-                                if (IsIdentical(srcFile, destPath)) { Log($"Skipped (identical) -> {folder}"); skipped++; continue; }
-                                rec.BackupPath = destPath + $".undo-bak-{DateTime.Now:yyyyMMddHHmmssfff}";
-                                try { File.Copy(destPath, rec.BackupPath, overwrite: false); backedUp++; }
-                                catch (Exception exBak) { Log($"WARN: Backup failed for {destPath}: {exBak.Message}"); }
-                            }
-                            else
-                            {
-                                Log($"Skipped -> {folder} (exists, overwrite off)");
-                                skipped++; continue;
-                            }
+                            sourceHash = SafeFileCopy.ComputeSha256(srcFile);
+                            sourceHashes.Add(srcFile, sourceHash);
                         }
 
-                        if (!CopyWithRetry(srcFile, destPath, chkOverwrite.Checked))
-                            throw new IOException("Copy failed after retries");
-                        entry.Ops.Add(rec);
-                        Log($"Copied -> {folder}: {Path.GetFileName(destPath)}");
-                        copied++;
+                        var result = SafeFileCopy.Execute(
+                            srcFile,
+                            destPath,
+                            chkOverwrite.Checked,
+                            knownSourceSha256: sourceHash);
+                        if (result.Disposition == CopyDisposition.SkippedIdentical)
+                        {
+                            Log($"Skipped (identical) -> {folder}");
+                            skipped++;
+                        }
+                        else if (result.Disposition == CopyDisposition.SkippedExisting)
+                        {
+                            Log($"Skipped -> {folder} (exists, overwrite off)");
+                            skipped++;
+                        }
+                        else
+                        {
+                            var receipt = result.Receipt
+                                ?? throw new IOException("The copy completed without an undo receipt.");
+                            entry.Ops.Add(receipt);
+                            if (receipt.ReplacedExisting) backedUp++;
+                            Log($"Copied -> {folder}: {Path.GetFileName(destPath)}");
+                            copied++;
+                        }
                     }
                     catch (Exception ex)
                     {
                         Log($"FAILED -> {folder}: {ex.Message}");
-                        if (!string.IsNullOrWhiteSpace(rec.BackupPath) && File.Exists(rec.BackupPath))
-                        { try { File.Delete(rec.BackupPath); } catch { } rec.BackupPath = null; }
                         failed++;
                     }
                 }
@@ -1139,10 +1152,10 @@ namespace ManyCopy
             if (!chkPreview.Checked)
             {
                 if (chkAutoClearDest.Checked) { listDest.Items.Clear(); _destSet.Clear(); Log("Destinations auto-cleared."); }
-                if (chkAutoClearSources.Checked) { _sources.Clear(); txtSource.Text = string.Empty; Log("Sources auto-cleared."); }
+                if (chkAutoClearSources.Checked) { _sources.Clear(); RefreshSourceText(); Log("Sources auto-cleared."); }
             }
 
-            Status($"Copied {copied} â€¢ Skipped {skipped} â€¢ Failed {failed} â€¢ Undo: {_undo.Count} Redo: {_redo.Count}");
+            Status($"Copied {copied} | Skipped {skipped} | Failed {failed} | Undo: {_undo.Count} Redo: {_redo.Count}");
         }
 
         private void DoUndo()
@@ -1150,35 +1163,31 @@ namespace ManyCopy
             if (_undo.Count == 0) { Status("Nothing to undo"); return; }
 
             var entry = _undo.Pop();
+            var undone = new HistoryEntry { Overwrite = entry.Overwrite };
+            var remaining = new HistoryEntry { Overwrite = entry.Overwrite };
             int restored = 0, removed = 0, failed = 0;
 
-            foreach (var rec in entry.Ops)
+            foreach (var rec in entry.Ops.AsEnumerable().Reverse())
             {
                 try
                 {
-                    if (rec.HadExisting && !string.IsNullOrWhiteSpace(rec.BackupPath) && File.Exists(rec.BackupPath))
-                    {
-                        if (File.Exists(rec.Destination)) { try { File.Delete(rec.Destination); } catch { } }
-                        File.Move(rec.BackupPath, rec.Destination, overwrite: false);
-                        restored++;
-                    }
-                    else
-                    {
-                        if (File.Exists(rec.Destination)) { File.Delete(rec.Destination); removed++; }
-                    }
+                    SafeFileCopy.Undo(rec);
+                    undone.Ops.Insert(0, rec);
+                    if (rec.ReplacedExisting) restored++; else removed++;
                 }
-                catch (Exception ex) { Log($"UNDO FAILED -> {rec.Destination}: {ex.Message}"); failed++; }
-                finally
+                catch (Exception ex)
                 {
-                    if (!string.IsNullOrWhiteSpace(rec.BackupPath) && File.Exists(rec.BackupPath))
-                    { try { File.Delete(rec.BackupPath); } catch { } }
+                    remaining.Ops.Insert(0, rec);
+                    Log($"UNDO FAILED -> {rec.Destination}: {ex.Message}");
+                    failed++;
                 }
             }
 
-            _redo.Push(entry);
+            if (undone.Ops.Count > 0) _redo.Push(undone);
+            if (remaining.Ops.Count > 0) _undo.Push(remaining);
             UpdateUndoRedoButtons();
             Log($"Undo: Restored {restored}, Removed {removed}, Failed {failed}.");
-            Status($"Undid 1 step â€¢ Undo: {_undo.Count} Redo: {_redo.Count}");
+            Status($"Undid 1 step | Undo: {_undo.Count} Redo: {_redo.Count}");
         }
 
         private void DoRedo()
@@ -1186,34 +1195,39 @@ namespace ManyCopy
             if (_redo.Count == 0) { Status("Nothing to redo"); return; }
 
             var entry = _redo.Pop();
+            var redone = new HistoryEntry { Overwrite = entry.Overwrite };
+            var remaining = new HistoryEntry { Overwrite = entry.Overwrite };
             int copied = 0, skipped = 0, failed = 0, backedUp = 0;
 
             foreach (var rec in entry.Ops)
             {
                 try
                 {
-                    if (File.Exists(rec.Destination))
+                    var result = SafeFileCopy.Redo(rec);
+                    if (result.Disposition == CopyDisposition.Copied && result.Receipt is not null)
                     {
-                        if (!entry.Overwrite) { skipped++; continue; }
-                        rec.BackupPath = rec.Destination + $".undo-bak-{DateTime.Now:yyyyMMddHHmmssfff}";
-                        try { File.Copy(rec.Destination, rec.BackupPath, overwrite: false); backedUp++; }
-                        catch (Exception exBak) { Log($"WARN: Backup failed for {rec.Destination}: {exBak.Message}"); }
+                        redone.Ops.Add(result.Receipt);
+                        if (result.Receipt.ReplacedExisting) backedUp++;
+                        copied++;
                     }
-
-                    File.Copy(rec.Source, rec.Destination, overwrite: entry.Overwrite);
-                    copied++;
+                    else
+                    {
+                        skipped++;
+                    }
                 }
                 catch (Exception ex)
                 {
-                    Log($"REDO FAILED -> {rec.Destination}: {ex.Message}"); failed++;
-                    if (!string.IsNullOrWhiteSpace(rec.BackupPath) && File.Exists(rec.BackupPath))
-                    { try { File.Delete(rec.BackupPath); } catch { } rec.BackupPath = null; }
+                    remaining.Ops.Add(rec);
+                    Log($"REDO FAILED -> {rec.Destination}: {ex.Message}");
+                    failed++;
                 }
             }
 
-            PushUndo(entry);
+            if (redone.Ops.Count > 0) PushUndo(redone);
+            if (remaining.Ops.Count > 0) _redo.Push(remaining);
+            UpdateUndoRedoButtons();
             Log($"Redo: Copied {copied}, Skipped {skipped}, Failed {failed}. Backups created: {backedUp}.");
-            Status($"Redid 1 step â€¢ Undo: {_undo.Count} Redo: {_redo.Count}");
+            Status($"Redid 1 step | Undo: {_undo.Count} Redo: {_redo.Count}");
         }
 
         private void PushUndo(HistoryEntry entry)
@@ -1223,6 +1237,10 @@ namespace ManyCopy
             if (_undo.Count > HistoryCap)
             {
                 var buffer = _undo.ToArray(); // newest-first ordering
+                foreach (var expired in buffer.Skip(HistoryCap))
+                {
+                    DeleteHistoryBackups(expired);
+                }
                 _undo.Clear();
                 var limit = Math.Min(buffer.Length, HistoryCap);
                 for (int i = limit - 1; i >= 0; i--)
@@ -1234,6 +1252,14 @@ namespace ManyCopy
             UpdateUndoRedoButtons();
         }
 
+        private static void DeleteHistoryBackups(HistoryEntry entry)
+        {
+            foreach (var receipt in entry.Ops)
+            {
+                try { SafeFileCopy.DeleteBackup(receipt); } catch { }
+            }
+        }
+
         private void UpdateUndoRedoButtons()
         {
             btnUndo.Enabled = _undo.Count > 0;
@@ -1241,7 +1267,7 @@ namespace ManyCopy
         }
 
         private void Log(string msg) => logBox.AppendText((msg ?? string.Empty) + Environment.NewLine);
-                private void LayoutBottom()
+        private void LayoutBottom()
         {
             if (logBox == null) return;
             int marginLeft = 10, marginRight = 10, marginBottom = 12;
@@ -1306,26 +1332,13 @@ namespace ManyCopy
                 }
             }
             catch { }
-        }        private void Status(string msg) { lblStatus.Text = msg; }
+        }
+        private void Status(string msg) { lblStatus.Text = msg; }
 
         private string SettingsPath =>
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ManyCopy", "settings.txt");
 
         
-
-        private void SaveLogToFile()
-        {
-            try
-            {
-                using var sfd = new SaveFileDialog { Filter = "Text files (*.txt)|*.txt|All files (*.*)|*.*", FileName = $"ManyCopy-Log-{DateTime.Now:yyyyMMdd-HHmmss}.txt" };
-                if (sfd.ShowDialog(this) == DialogResult.OK)
-                {
-                    File.WriteAllText(sfd.FileName, logBox.Text ?? string.Empty);
-                    Status("Log saved");
-                }
-            }
-            catch (Exception ex) { Status($"Save failed: {ex.Message}"); }
-        }
 
         private void SaveTheme(ThemeMode mode)
         {
@@ -1362,66 +1375,40 @@ namespace ManyCopy
             try { PerformAutoScale(); LayoutBottom(); Invalidate(true); } catch { }
         }
 
+        protected override void OnFormClosed(FormClosedEventArgs e)
+        {
+            foreach (var entry in _undo) DeleteHistoryBackups(entry);
+            foreach (var entry in _redo) DeleteHistoryBackups(entry);
+            srcTip.Dispose();
+            srcMenu.Dispose();
+            base.OnFormClosed(e);
+        }
+
         
 
         private static bool IsValidFileName(string name)
         {
             if (string.IsNullOrWhiteSpace(name)) return false;
             var invalid = Path.GetInvalidFileNameChars();
-            return name.All(ch => !invalid.Contains(ch));
-        }
+            if (name.Any(invalid.Contains) || name.EndsWith(' ') || name.EndsWith('.')) return false;
 
-        private static bool IsPathTooLong(string path)
-        {
-            try { return path.Length > 260; } catch { return false; }
-        }
-
-        private static bool IsIdentical(string src, string dest)
-        {
-            try
+            string deviceName = name.Split('.')[0];
+            string[] reservedNames =
             {
-                var si = new FileInfo(src);
-                var di = new FileInfo(dest);
-                return si.Length == di.Length && si.LastWriteTimeUtc == di.LastWriteTimeUtc;
-            }
-            catch { return false; }
-        }
-
-        private static bool CopyWithRetry(string src, string dest, bool overwrite, int retries = 3, int delayMs = 120)
-        {
-            for (int attempt = 0; attempt < retries; attempt++)
-            {
-                try
-                {
-                    File.Copy(src, dest, overwrite: overwrite);
-                    return true;
-                }
-                catch
-                {
-                    if (attempt == retries - 1) return false;
-                    System.Threading.Thread.Sleep(delayMs);
-                }
-            }
-            return false;
+                "CON", "PRN", "AUX", "NUL",
+                "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
+                "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
+            };
+            return !reservedNames.Contains(deviceName, StringComparer.OrdinalIgnoreCase);
         }
 
     }
 
     // ---------- Models ----------
-    internal sealed class CopyRecord
-    {
-        public string Destination { get; set; } = string.Empty;
-        public string Source { get; set; } = string.Empty;
-        public bool HadExisting { get; set; } = false;
-        public string? BackupPath { get; set; }
-    }
-
     internal sealed class HistoryEntry
     {
-        public List<string> Sources { get; set; } = new();
         public bool Overwrite { get; set; }
-        public string Description { get; set; } = string.Empty;
-        public List<CopyRecord> Ops { get; set; } = new();
+        public List<CopyReceipt> Ops { get; set; } = new();
     }
 
     
