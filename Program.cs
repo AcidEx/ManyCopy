@@ -497,20 +497,30 @@ namespace ManyCopy
         private CheckBox chkOverwrite = null!;
         private CheckBox chkAutoClearDest = null!;
         private CheckBox chkAutoClearSources = null!;
-        // Prefix controls (mode dropdown replacing separate checkboxes)
+        private GroupBox grpNaming = null!;
+        private Label lblNamePreview = null!;
+        // Prefix controls
         private ComboBox cmbPrefixMode = null!; // 0=None, 1=Fixed, 2=Numbered
         private TextBox txtPrefix = null!;      // Fixed prefix text
         private TextBox txtPrefixBase = null!;  // Numbered prefix base
         private NumericUpDown nudPrefixStart = null!; // Numbered prefix start
-        private NumericUpDown nudPrefixPad = null!;   // Optional zero-padding for numbered prefix
+        private NumericUpDown nudPrefixPad = null!;   // Number of digits for numbered prefix
         private ComboBox cmbPrefixSep = null!;        // Separator between prefix and name
-        // Suffix controls (mode dropdown with fixed/numbered)
+        private Label lblPrefixText = null!;
+        private Label lblPrefixStart = null!;
+        private Label lblPrefixDigits = null!;
+        private Label lblPrefixSeparator = null!;
+        // Suffix controls
         private ComboBox cmbSuffixMode = null!; // 0=None, 1=Fixed, 2=Numbered
         private TextBox txtSuffix = null!;      // Fixed suffix text
         private TextBox txtSuffixBase = null!;  // Numbered suffix base
         private NumericUpDown nudSuffixStart = null!; // Numbered suffix start
-        private NumericUpDown nudSuffixPad = null!;   // Optional zero-padding for numbered suffix
+        private NumericUpDown nudSuffixPad = null!;   // Number of digits for numbered suffix
         private ComboBox cmbSuffixSep = null!;        // Separator between name and suffix
+        private Label lblSuffixText = null!;
+        private Label lblSuffixStart = null!;
+        private Label lblSuffixDigits = null!;
+        private Label lblSuffixSeparator = null!;
         private CheckBox chkPreview = null!;
 
         private CheckBox chkEnableRange = null!;
@@ -688,81 +698,99 @@ namespace ManyCopy
             Controls.AddRange(new Control[] { lblDest, listDest, btnBrowseDest, btnRemoveSel, btnClear });
 
             // Options
-            chkOverwrite = new CheckBox { Text = "Overwrite if exists", Left = 10, Top = 650, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            chkOverwrite = new CheckBox { Text = "Replace files that already exist", AutoSize = true };
+            chkPreview = new CheckBox { Text = "Preview only (do not copy)", AutoSize = true };
+
             // Place auto-clear toggles near their related sections
-            chkAutoClearSources = new CheckBox { Text = "Auto-clear sources after copy", Left = 10, Top = 26, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
-            chkAutoClearDest = new CheckBox { Text = "Auto-clear destinations after copy", Left = 10, Top = 215, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
+            chkAutoClearSources = new CheckBox { Text = "Clear source files after copying", Left = 10, Top = 26, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
+            chkAutoClearDest = new CheckBox { Text = "Clear destination folders after copying", Left = 10, Top = 215, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
 
-            // Prefix mode: None / Fixed / Numbered
-            var lblPrefix = new Label { Text = "Prefix:", Left = 160, Top = 650, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
-            cmbPrefixMode = new ComboBox { Left = 210, Top = 646, Width = 90, DropDownStyle = ComboBoxStyle.DropDownList, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
-            cmbPrefixMode.Items.AddRange(new object[] { "None", "Fixed", "Numbered" });
+            grpNaming = new GroupBox { Text = "File naming (optional)", Height = 128, Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom };
+            var lblPrefix = new Label { Text = "Prefix", Left = 12, Top = 27, Width = 50 };
+            cmbPrefixMode = new ComboBox { Left = 65, Top = 23, Width = 105, DropDownStyle = ComboBoxStyle.DropDownList };
+            cmbPrefixMode.Items.AddRange(new object[] { "Off", "Text", "Numbered" });
+
+            lblPrefixText = new Label { Text = "Text", Left = 182, Top = 27, Width = 32 };
+            txtPrefix = new TextBox { Left = 220, Top = 23, Width = 180, PlaceholderText = "e.g. Project" };
+            txtPrefixBase = new TextBox { Left = 220, Top = 23, Width = 180, PlaceholderText = "e.g. Project" };
+            lblPrefixStart = new Label { Text = "Starts at", Left = 415, Top = 27, Width = 48 };
+            nudPrefixStart = new NumericUpDown { Left = 468, Top = 23, Width = 70, Minimum = 0, Maximum = 9_999_999, Value = 1 };
+            lblPrefixDigits = new Label { Text = "Digits", Left = 550, Top = 27, Width = 38 };
+            nudPrefixPad = new NumericUpDown { Left = 593, Top = 23, Width = 48, Minimum = 1, Maximum = 7, Value = 3 };
+            lblPrefixSeparator = new Label { Text = "Separator", Left = 655, Top = 27, Width = 58 };
+            cmbPrefixSep = new ComboBox { Left = 718, Top = 23, Width = 82, DropDownStyle = ComboBoxStyle.DropDownList };
+            cmbPrefixSep.Items.AddRange(new object[] { "(none)", "-", "_" });
+
+            var lblSuffix = new Label { Text = "Suffix", Left = 12, Top = 59, Width = 50 };
+            cmbSuffixMode = new ComboBox { Left = 65, Top = 55, Width = 105, DropDownStyle = ComboBoxStyle.DropDownList };
+            cmbSuffixMode.Items.AddRange(new object[] { "Off", "Text", "Numbered" });
+
+            lblSuffixText = new Label { Text = "Text", Left = 182, Top = 59, Width = 32 };
+            txtSuffix = new TextBox { Left = 220, Top = 55, Width = 180, PlaceholderText = "e.g. Final" };
+            txtSuffixBase = new TextBox { Left = 220, Top = 55, Width = 180, PlaceholderText = "e.g. Version" };
+            lblSuffixStart = new Label { Text = "Starts at", Left = 415, Top = 59, Width = 48 };
+            nudSuffixStart = new NumericUpDown { Left = 468, Top = 55, Width = 70, Minimum = 0, Maximum = 9_999_999, Value = 1 };
+            lblSuffixDigits = new Label { Text = "Digits", Left = 550, Top = 59, Width = 38 };
+            nudSuffixPad = new NumericUpDown { Left = 593, Top = 55, Width = 48, Minimum = 1, Maximum = 7, Value = 3 };
+            lblSuffixSeparator = new Label { Text = "Separator", Left = 655, Top = 59, Width = 58 };
+            cmbSuffixSep = new ComboBox { Left = 718, Top = 55, Width = 82, DropDownStyle = ComboBoxStyle.DropDownList };
+            cmbSuffixSep.Items.AddRange(new object[] { "(none)", "-", "_" });
+
+            var lblExample = new Label { Text = "Example:", Left = 12, Top = 94, Width = 55 };
+            lblNamePreview = new Label { Left = 70, Top = 94, Height = 20, AutoEllipsis = true, Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top };
+
+            grpNaming.Controls.AddRange(new Control[]
+            {
+                lblPrefix, cmbPrefixMode, lblPrefixText, txtPrefix, txtPrefixBase,
+                lblPrefixStart, nudPrefixStart, lblPrefixDigits, nudPrefixPad, lblPrefixSeparator, cmbPrefixSep,
+                lblSuffix, cmbSuffixMode, lblSuffixText, txtSuffix, txtSuffixBase,
+                lblSuffixStart, nudSuffixStart, lblSuffixDigits, nudSuffixPad, lblSuffixSeparator, cmbSuffixSep,
+                lblExample, lblNamePreview
+            });
+
+            srcTip.SetToolTip(nudPrefixStart, "The first number used. It increases once for each destination folder.");
+            srcTip.SetToolTip(nudPrefixPad, "How many digits to show. For example, 3 displays 001.");
+            srcTip.SetToolTip(nudSuffixStart, "The first number used. It increases once for each destination folder.");
+            srcTip.SetToolTip(nudSuffixPad, "How many digits to show. For example, 3 displays 001.");
+
+            cmbPrefixMode.SelectedIndexChanged += (_, __) => { UpdateNamingControls(); UpdateFilenamePreview(); };
+            cmbSuffixMode.SelectedIndexChanged += (_, __) => { UpdateNamingControls(); UpdateFilenamePreview(); };
+            txtPrefix.TextChanged += (_, __) => UpdateFilenamePreview();
+            txtPrefixBase.TextChanged += (_, __) => UpdateFilenamePreview();
+            txtSuffix.TextChanged += (_, __) => UpdateFilenamePreview();
+            txtSuffixBase.TextChanged += (_, __) => UpdateFilenamePreview();
+            nudPrefixStart.ValueChanged += (_, __) => UpdateFilenamePreview();
+            nudPrefixPad.ValueChanged += (_, __) => UpdateFilenamePreview();
+            nudSuffixStart.ValueChanged += (_, __) => UpdateFilenamePreview();
+            nudSuffixPad.ValueChanged += (_, __) => UpdateFilenamePreview();
+            cmbPrefixSep.SelectedIndexChanged += (_, __) => UpdateFilenamePreview();
+            cmbSuffixSep.SelectedIndexChanged += (_, __) => UpdateFilenamePreview();
+
+            cmbPrefixSep.SelectedIndex = 2;
+            cmbSuffixSep.SelectedIndex = 2;
             cmbPrefixMode.SelectedIndex = 0;
-
-            txtPrefix = new TextBox { Left = 310, Top = 647, Width = 120, Enabled = false, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
-            txtPrefixBase = new TextBox { Left = 310, Top = 647, Width = 100, Enabled = false, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
-            var lblStartNum = new Label { Text = "Start:", Left = 415, Top = 650, AutoSize = true, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
-            nudPrefixStart = new NumericUpDown { Left = 455, Top = 647, Width = 60, Minimum = 0, Maximum = 1_000_000, Value = 1, Enabled = false, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
-            nudPrefixPad = new NumericUpDown { Left = 520, Top = 647, Width = 50, Minimum = 0, Maximum = 10, Value = 0, Enabled = false, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
-            cmbPrefixSep = new ComboBox { Left = 575, Top = 646, Width = 60, Enabled = false, Visible = false, DropDownStyle = ComboBoxStyle.DropDownList, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
-            cmbPrefixSep.Items.AddRange(new object[] { "(none)", "-", "_" }); cmbPrefixSep.SelectedIndex = 0;
-
-            cmbPrefixMode.SelectedIndexChanged += (_, __) =>
-            {
-                var mode = cmbPrefixMode.SelectedIndex;
-                // Reset visibility
-                txtPrefix.Visible = (mode == 1); txtPrefix.Enabled = (mode == 1);
-                txtPrefixBase.Visible = (mode == 2); txtPrefixBase.Enabled = (mode == 2);
-                lblStartNum.Visible = (mode == 2); nudPrefixStart.Visible = (mode == 2); nudPrefixStart.Enabled = (mode == 2);
-                nudPrefixPad.Visible = (mode == 2); nudPrefixPad.Enabled = (mode == 2);
-                cmbPrefixSep.Visible = (mode != 0); cmbPrefixSep.Enabled = (mode != 0);
-            };
-
-            // Suffix mode: None / Fixed / Numbered
-            var lblSuffix = new Label { Text = "Suffix:", Left = 530, Top = 650, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
-            cmbSuffixMode = new ComboBox { Left = 580, Top = 646, Width = 90, DropDownStyle = ComboBoxStyle.DropDownList, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
-            cmbSuffixMode.Items.AddRange(new object[] { "None", "Fixed", "Numbered" });
             cmbSuffixMode.SelectedIndex = 0;
-
-            txtSuffix = new TextBox { Left = 680, Top = 647, Width = 120, Enabled = false, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
-            txtSuffixBase = new TextBox { Left = 680, Top = 647, Width = 100, Enabled = false, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
-            var lblSuffixStart = new Label { Text = "Start:", Left = 785, Top = 650, AutoSize = true, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
-            nudSuffixStart = new NumericUpDown { Left = 825, Top = 647, Width = 60, Minimum = 0, Maximum = 1_000_000, Value = 1, Enabled = false, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
-            nudSuffixPad = new NumericUpDown { Left = 890, Top = 647, Width = 50, Minimum = 0, Maximum = 10, Value = 0, Enabled = false, Visible = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
-            cmbSuffixSep = new ComboBox { Left = 945, Top = 646, Width = 60, Enabled = false, Visible = false, DropDownStyle = ComboBoxStyle.DropDownList, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
-            cmbSuffixSep.Items.AddRange(new object[] { "(none)", "-", "_" }); cmbSuffixSep.SelectedIndex = 0;
-
-            cmbSuffixMode.SelectedIndexChanged += (_, __) =>
-            {
-                var mode = cmbSuffixMode.SelectedIndex;
-                txtSuffix.Visible = (mode == 1); txtSuffix.Enabled = (mode == 1);
-                txtSuffixBase.Visible = (mode == 2); txtSuffixBase.Enabled = (mode == 2);
-                lblSuffixStart.Visible = (mode == 2); nudSuffixStart.Visible = (mode == 2); nudSuffixStart.Enabled = (mode == 2);
-                nudSuffixPad.Visible = (mode == 2); nudSuffixPad.Enabled = (mode == 2);
-                cmbSuffixSep.Visible = (mode != 0); cmbSuffixSep.Enabled = (mode != 0);
-            };
-
-            chkPreview = new CheckBox { Text = "Preview mode", Left = 10, Top = 680, AutoSize = true, Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
+            UpdateNamingControls();
 
             Controls.AddRange(new Control[]
             {
                 chkOverwrite,
                 chkAutoClearDest,
                 chkAutoClearSources,
-                lblPrefix, cmbPrefixMode, txtPrefix, txtPrefixBase, lblStartNum, nudPrefixStart, nudPrefixPad, cmbPrefixSep,
-                lblSuffix, cmbSuffixMode, txtSuffix, txtSuffixBase, lblSuffixStart, nudSuffixStart, nudSuffixPad, cmbSuffixSep,
+                grpNaming,
                 chkPreview
             });
 
             // Actions + log
-            btnUndo = new Button { Text = "Undo", Left = 610, Top = 676, Width = 90, Height = 32, Enabled = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Right };
+            btnUndo = new Button { Text = "Undo last copy", Width = 120, Height = 34, Enabled = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Right };
             btnUndo.Click += (_, __) => DoUndo();
 
-            btnRedo = new Button { Text = "Redo", Left = 710, Top = 676, Width = 90, Height = 32, Enabled = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Right };
+            btnRedo = new Button { Text = "Redo copy", Width = 105, Height = 34, Enabled = false, Anchor = AnchorStyles.Bottom | AnchorStyles.Right };
             btnRedo.Click += (_, __) => DoRedo();
 
-            btnEngage = new Button { Text = "Engage", Left = 810, Top = 674, Width = 120, Height = 36, Tag = "primary", Anchor = AnchorStyles.Bottom | AnchorStyles.Right };
+            btnEngage = new Button { Text = "Copy files", Width = 130, Height = 38, Tag = "primary", Anchor = AnchorStyles.Bottom | AnchorStyles.Right };
             btnEngage.Click += (_, __) => RunCopyOrPreview();
+            chkPreview.CheckedChanged += (_, __) => btnEngage.Text = chkPreview.Checked ? "Preview copy" : "Copy files";
 
             lblStatus = new Label { Left = 10, Top = 700, AutoSize = true, Text = "Ready", Anchor = AnchorStyles.Bottom | AnchorStyles.Left };
 
@@ -779,10 +807,10 @@ namespace ManyCopy
             };
 
             Controls.AddRange(new Control[] { btnUndo, btnRedo, btnEngage, lblStatus, logBox });
-            // Ensure bottom log box stays within window bounds on resize
-            Layout += (_, __) => LayoutBottom();
-            Resize += (_, __) => LayoutBottom();
-            LayoutBottom();
+            // Keep the destination list, naming form, actions, and log usable at different window sizes.
+            Layout += (_, __) => LayoutWorkspace();
+            Resize += (_, __) => LayoutWorkspace();
+            LayoutWorkspace();
             ResumeLayout(true);
 
             // Theme + accent on load
@@ -790,6 +818,105 @@ namespace ManyCopy
             cmbTheme.SelectedIndex = saved switch { ThemeMode.Light => 1, ThemeMode.Dark => 2, _ => 0 };
             cmbAccent.SelectedIndex = Theme.CurrentAccent switch { AccentPreset.Default => 0, AccentPreset.Blue => 1, AccentPreset.Green => 2, AccentPreset.Purple => 3, AccentPreset.Orange => 4, AccentPreset.Red => 5, _ => 0 };
             Theme.ApplyTo(this, saved);
+        }
+
+        private void UpdateNamingControls()
+        {
+            bool prefixEnabled = cmbPrefixMode.SelectedIndex > 0;
+            bool prefixNumbered = cmbPrefixMode.SelectedIndex == 2;
+            SetVisibleAndEnabled(txtPrefix, prefixEnabled && !prefixNumbered);
+            SetVisibleAndEnabled(txtPrefixBase, prefixNumbered);
+            SetVisibleAndEnabled(lblPrefixText, prefixEnabled);
+            SetVisibleAndEnabled(lblPrefixStart, prefixNumbered);
+            SetVisibleAndEnabled(nudPrefixStart, prefixNumbered);
+            SetVisibleAndEnabled(lblPrefixDigits, prefixNumbered);
+            SetVisibleAndEnabled(nudPrefixPad, prefixNumbered);
+            SetVisibleAndEnabled(lblPrefixSeparator, prefixEnabled);
+            SetVisibleAndEnabled(cmbPrefixSep, prefixEnabled);
+
+            bool suffixEnabled = cmbSuffixMode.SelectedIndex > 0;
+            bool suffixNumbered = cmbSuffixMode.SelectedIndex == 2;
+            SetVisibleAndEnabled(txtSuffix, suffixEnabled && !suffixNumbered);
+            SetVisibleAndEnabled(txtSuffixBase, suffixNumbered);
+            SetVisibleAndEnabled(lblSuffixText, suffixEnabled);
+            SetVisibleAndEnabled(lblSuffixStart, suffixNumbered);
+            SetVisibleAndEnabled(nudSuffixStart, suffixNumbered);
+            SetVisibleAndEnabled(lblSuffixDigits, suffixNumbered);
+            SetVisibleAndEnabled(nudSuffixPad, suffixNumbered);
+            SetVisibleAndEnabled(lblSuffixSeparator, suffixEnabled);
+            SetVisibleAndEnabled(cmbSuffixSep, suffixEnabled);
+        }
+
+        private static void SetVisibleAndEnabled(Control control, bool value)
+        {
+            control.Visible = value;
+            control.Enabled = value;
+        }
+
+        private void UpdateFilenamePreview()
+        {
+            if (lblNamePreview is null) return;
+
+            int prefixMode = cmbPrefixMode.SelectedIndex;
+            int suffixMode = cmbSuffixMode.SelectedIndex;
+            string prefixText = prefixMode == 1 ? txtPrefix.Text : txtPrefixBase.Text;
+            string suffixText = suffixMode == 1 ? txtSuffix.Text : txtSuffixBase.Text;
+
+            if (prefixMode > 0 && string.IsNullOrWhiteSpace(prefixText))
+            {
+                lblNamePreview.Text = "Enter prefix text to see an example.";
+                return;
+            }
+
+            if (suffixMode > 0 && string.IsNullOrWhiteSpace(suffixText))
+            {
+                lblNamePreview.Text = "Enter suffix text to see an example.";
+                return;
+            }
+
+            string sourceName = _sources.Count > 0
+                ? Path.GetFileName(_sources[0])
+                : "original-file.txt";
+            string example = BuildTargetName(
+                sourceName,
+                (int)nudPrefixStart.Value,
+                (int)nudSuffixStart.Value);
+
+            lblNamePreview.Text = example;
+            srcTip.SetToolTip(lblNamePreview, example);
+        }
+
+        private static string SelectedSeparator(ComboBox comboBox) =>
+            comboBox.SelectedItem?.ToString() switch
+            {
+                "-" => "-",
+                "_" => "_",
+                _ => string.Empty,
+            };
+
+        private string BuildTargetName(string sourceFile, int prefixIndex, int suffixIndex)
+        {
+            int prefixMode = cmbPrefixMode.SelectedIndex;
+            int suffixMode = cmbSuffixMode.SelectedIndex;
+            string suffix = suffixMode switch
+            {
+                1 => txtSuffix.Text,
+                2 => txtSuffixBase.Text + NamingHelpers.FormatRangeNumber(suffixIndex, (int)nudSuffixPad.Value),
+                _ => string.Empty,
+            };
+
+            return NamingHelpers.BuildTargetName(
+                Path.GetFileName(sourceFile),
+                useFixed: prefixMode == 1,
+                fixedPrefix: txtPrefix.Text,
+                useRange: prefixMode == 2,
+                rangeBase: txtPrefixBase.Text,
+                index: prefixIndex,
+                useSuffix: suffixMode > 0,
+                suffix: suffix,
+                prefixPadWidth: (int)nudPrefixPad.Value,
+                prefixSeparator: SelectedSeparator(cmbPrefixSep),
+                suffixSeparator: SelectedSeparator(cmbSuffixSep));
         }
 
         private void MainForm_KeyDown(object? sender, KeyEventArgs e)
@@ -899,6 +1026,7 @@ namespace ManyCopy
             {
                 txtSource.Text = string.Empty;
                 srcTip.SetToolTip(txtSource, string.Empty);
+                UpdateFilenamePreview();
                 return;
             }
 
@@ -907,6 +1035,7 @@ namespace ManyCopy
             string display = ComposeInlineList(names, 120);
             txtSource.Text = display;
             srcTip.SetToolTip(txtSource, string.Join(", ", names));
+            UpdateFilenamePreview();
         }
 
         private static string ComposeInlineList(IReadOnlyList<string> items, int maxLen)
@@ -1011,28 +1140,9 @@ namespace ManyCopy
                     continue;
                 }
 
-                // Build suffix text per destination
-                string suffixTextBase = string.Empty;
-                if (useSuffixFixed) suffixTextBase = txtSuffix.Text ?? string.Empty;
-                else if (useSuffixRange)
-                {
-                    var sNum = NamingHelpers.FormatRangeNumber(idxSuffix, (int)nudSuffixPad.Value);
-                    suffixTextBase = (txtSuffixBase.Text ?? string.Empty) + sNum;
-                }
-                string prefixSep = (cmbPrefixSep.Visible && cmbPrefixSep.SelectedIndex > 0) ? (string)cmbPrefixSep.SelectedItem! : string.Empty;
-                string suffixSep = (cmbSuffixSep.Visible && cmbSuffixSep.SelectedIndex > 0) ? (string)cmbSuffixSep.SelectedItem! : string.Empty;
-
                 foreach (var srcFile in sources)
                 {
-                    string baseName = Path.GetFileName(srcFile);
-                    string finalName = NamingHelpers.BuildTargetName(
-                        baseName,
-                        useFixed, txtPrefix.Text,
-                        useRange, txtPrefixBase.Text, idxPrefix,
-                        (useSuffixFixed || useSuffixRange), suffixTextBase,
-                        prefixPadWidth: (int)nudPrefixPad.Value,
-                        prefixSeparator: prefixSep,
-                        suffixSeparator: suffixSep);
+                    string finalName = BuildTargetName(srcFile, idxPrefix, idxSuffix);
                     var dest = Path.Combine(folder, finalName);
 
                     if (!IsValidFileName(finalName))
@@ -1077,28 +1187,9 @@ namespace ManyCopy
                 if (string.IsNullOrWhiteSpace(folder) || !Directory.Exists(folder))
                 { Log($"Skipped -> {folder} (folder missing)"); skipped++; continue; }
 
-                // Compose once per destination
-                string suffixTextBase = string.Empty;
-                if (useSuffixFixed) suffixTextBase = txtSuffix.Text ?? string.Empty;
-                else if (useSuffixRange)
-                {
-                    var sNum = NamingHelpers.FormatRangeNumber(idxSuffix, (int)nudSuffixPad.Value);
-                    suffixTextBase = (txtSuffixBase.Text ?? string.Empty) + sNum;
-                }
-                string prefixSep = (cmbPrefixSep.Visible && cmbPrefixSep.SelectedIndex > 0) ? (string)cmbPrefixSep.SelectedItem! : string.Empty;
-                string suffixSep = (cmbSuffixSep.Visible && cmbSuffixSep.SelectedIndex > 0) ? (string)cmbSuffixSep.SelectedItem! : string.Empty;
-
                 foreach (var srcFile in sources)
                 {
-                    string baseName2 = Path.GetFileName(srcFile);
-                    string finalName2 = NamingHelpers.BuildTargetName(
-                        baseName2,
-                        useFixed, txtPrefix.Text,
-                        useRange, txtPrefixBase.Text, idxPrefix,
-                        (useSuffixFixed || useSuffixRange), suffixTextBase,
-                        prefixPadWidth: (int)nudPrefixPad.Value,
-                        prefixSeparator: prefixSep,
-                        suffixSeparator: suffixSep);
+                    string finalName2 = BuildTargetName(srcFile, idxPrefix, idxSuffix);
                     var destPath = Path.Combine(folder, finalName2);
 
                     try
@@ -1267,71 +1358,45 @@ namespace ManyCopy
         }
 
         private void Log(string msg) => logBox.AppendText((msg ?? string.Empty) + Environment.NewLine);
-        private void LayoutBottom()
+        private void LayoutWorkspace()
         {
-            if (logBox == null) return;
-            int marginLeft = 10, marginRight = 10, marginBottom = 12;
-            int desiredHeight = 140; // larger default log area
+            if (logBox is null || grpNaming is null) return;
 
-            // Determine the bottom of the bottom-row controls (buttons/preview/mode dropdowns)
-            int controlsBottom = 0;
-            try
-            {
-                controlsBottom = new int[]
-                {
-                    btnUndo?.Bottom ?? 0,
-                    btnRedo?.Bottom ?? 0,
-                    btnEngage?.Bottom ?? 0,
-                    chkPreview?.Bottom ?? 0,
-                    cmbPrefixMode?.Bottom ?? 0,
-                    cmbSuffixMode?.Bottom ?? 0
-                }.Max();
-            }
-            catch { controlsBottom = 700; }
+            const int margin = 10;
+            const int buttonColumnWidth = 105;
+            int clientWidth = ClientSize.Width;
+            int clientHeight = ClientSize.Height;
 
-            int clientW = this.ClientSize.Width;
-            int clientH = this.ClientSize.Height;
+            int namingTop = Math.Max(listDest.Top + 125, clientHeight - 330);
+            listDest.Width = Math.Max(250, clientWidth - buttonColumnWidth - (margin * 2));
+            listDest.Height = Math.Max(110, namingTop - listDest.Top - margin);
 
-            // Log box should start below bottom controls with a small gap
-            int minTop = controlsBottom + 10;
-            int width = Math.Max(100, clientW - marginLeft - marginRight);
-            int top = Math.Max(minTop, clientH - marginBottom - desiredHeight);
-            int height = Math.Max(50, clientH - marginBottom - top);
+            int buttonLeft = clientWidth - buttonColumnWidth + 5;
+            btnBrowseDest.Left = buttonLeft;
+            btnRemoveSel.Left = buttonLeft;
+            btnClear.Left = buttonLeft;
 
-            logBox.Left = marginLeft;
-            logBox.Width = width;
-            logBox.Top = top;
-            logBox.Height = height;
+            grpNaming.SetBounds(margin, namingTop, Math.Max(820, clientWidth - (margin * 2)), 128);
+            lblNamePreview.Width = Math.Max(250, grpNaming.ClientSize.Width - 82);
 
-            // Place status label just above the log box, aligned left
-            if (lblStatus != null)
-            {
-                lblStatus.Left = marginLeft;
-                int labelTop = logBox.Top - lblStatus.Height - 6;
-                lblStatus.Top = Math.Max(controlsBottom + 2, labelTop);
-            }
+            int actionTop = grpNaming.Bottom + 8;
+            chkOverwrite.SetBounds(margin, actionTop + 8, chkOverwrite.PreferredSize.Width, chkOverwrite.PreferredSize.Height);
+            chkPreview.SetBounds(220, actionTop + 8, chkPreview.PreferredSize.Width, chkPreview.PreferredSize.Height);
 
-            // Right-align action buttons (Engage, Redo, Undo) with consistent gaps
-            try
-            {
-                int gap = 10;
-                int x = clientW - marginRight;
-                if (btnEngage != null)
-                {
-                    btnEngage.Left = x - btnEngage.Width;
-                    x = btnEngage.Left - gap;
-                }
-                if (btnRedo != null)
-                {
-                    btnRedo.Left = x - btnRedo.Width;
-                    x = btnRedo.Left - gap;
-                }
-                if (btnUndo != null)
-                {
-                    btnUndo.Left = x - btnUndo.Width;
-                }
-            }
-            catch { }
+            int right = clientWidth - margin;
+            btnEngage.SetBounds(right - btnEngage.Width, actionTop, btnEngage.Width, btnEngage.Height);
+            right = btnEngage.Left - 10;
+            btnRedo.SetBounds(right - btnRedo.Width, actionTop + 2, btnRedo.Width, btnRedo.Height);
+            right = btnRedo.Left - 10;
+            btnUndo.SetBounds(right - btnUndo.Width, actionTop + 2, btnUndo.Width, btnUndo.Height);
+
+            lblStatus.SetBounds(margin, actionTop + 43, Math.Max(200, clientWidth - (margin * 2)), lblStatus.PreferredSize.Height);
+            int logTop = lblStatus.Bottom + 5;
+            logBox.SetBounds(
+                margin,
+                logTop,
+                Math.Max(250, clientWidth - (margin * 2)),
+                Math.Max(60, clientHeight - logTop - margin));
         }
         private void Status(string msg) { lblStatus.Text = msg; }
 
@@ -1372,7 +1437,7 @@ namespace ManyCopy
         protected override void OnDpiChanged(DpiChangedEventArgs e)
         {
             base.OnDpiChanged(e);
-            try { PerformAutoScale(); LayoutBottom(); Invalidate(true); } catch { }
+            try { PerformAutoScale(); LayoutWorkspace(); Invalidate(true); } catch { }
         }
 
         protected override void OnFormClosed(FormClosedEventArgs e)

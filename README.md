@@ -17,6 +17,8 @@ ran.
 Current release: **1.1.9**. Review the [changelog](CHANGELOG.md) for a
 breakdown of recent updates.
 
+Development version: **1.2.0**.
+
 ## Requirements
 
 - Windows desktop. The WinForms UI relies on Windows-specific APIs.
@@ -46,7 +48,7 @@ dotnet publish ManyCopy.csproj -c Release
 
 After building or publishing, launch the executable from the `bin` or
 `publish` directory to verify that the splash screen still shows the progress
-bar and `1.1.9` version label before ManyCopy opens.
+bar and the version from `ManyCopy.csproj` before ManyCopy opens.
 
 ## Verification
 

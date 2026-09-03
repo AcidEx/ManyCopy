@@ -1,19 +1,15 @@
 # Maintenance Notes
 
-## Completed for 1.1.9
+## 1.2 priorities
 
-- Made overwrite backups mandatory and integrity-checked before replacement.
-- Prevented Undo and Redo from changing files modified outside ManyCopy.
-- Added cleanup for expired and end-of-session Undo backups.
-- Added regression tests for copy, overwrite, Undo, Redo, and content comparison.
-- Restricted pull-request release checks to unsigned, read-only packaging.
-- Added a safe maximum for generated folder ranges.
+- [x] Make optional prefix and suffix naming controls understandable at a glance.
+- [x] Add a live filename example and use the same naming logic for preview and copy.
+- [x] Replace ambiguous labels and make the lower half of the window resize cleanly.
+- [ ] Replace the compact source field with a visible per-file list.
+- [ ] Move long-running copy work off the UI thread and add progress and cancellation.
+- [ ] Build one reusable copy plan for preview and execution.
+- [ ] Add UI automation in addition to the core tests.
 
-## Possible future work
+## Later
 
-- Replace the compact source field with a visible per-file list.
-- Move long-running copy work off the UI thread and add progress and cancellation.
-- Use one copy plan for preview and execution.
-- Replace fixed control coordinates with a responsive layout.
-- Add UI automation in addition to the core tests.
 - Use trusted code signing for public releases when a suitable certificate is available.

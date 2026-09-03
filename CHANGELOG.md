@@ -6,6 +6,13 @@ and uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- Redesigned the optional filename controls into clear Prefix and Suffix rows that only show relevant fields.
+- Replaced unexplained numeric fields with labelled start and digit controls, sensible three-digit defaults, and a live filename example.
+- Renamed ambiguous actions and options, including `Engage`, to describe what they do in plain language.
+- Made the destination list, naming controls, action row, and log resize together more predictably.
+- Reused the same filename-building path for the live example, preview mode, and actual copies.
+
 ## [1.1.9] - 2026-09-03
 
 ### Added
