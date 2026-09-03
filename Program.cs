@@ -497,6 +497,8 @@ namespace ManyCopy
         private CheckBox chkOverwrite = null!;
         private CheckBox chkAutoClearDest = null!;
         private CheckBox chkAutoClearSources = null!;
+        private CheckBox chkEnableNaming = null!;
+        private TabControl tabNamingStrategy = null!;
         private GroupBox grpNaming = null!;
         private Label lblNamePreview = null!;
         // Prefix controls
@@ -510,6 +512,7 @@ namespace ManyCopy
         private Label lblPrefixStart = null!;
         private Label lblPrefixEnd = null!;
         private Label lblPrefixEndValue = null!;
+        private NumericUpDown nudPrefixEnd = null!;
         private Label lblPrefixDigits = null!;
         private Label lblPrefixSeparator = null!;
         // Suffix controls
@@ -523,6 +526,7 @@ namespace ManyCopy
         private Label lblSuffixStart = null!;
         private Label lblSuffixEnd = null!;
         private Label lblSuffixEndValue = null!;
+        private NumericUpDown nudSuffixEnd = null!;
         private Label lblSuffixDigits = null!;
         private Label lblSuffixSeparator = null!;
         private CheckBox chkPreview = null!;
@@ -549,6 +553,7 @@ namespace ManyCopy
         private readonly Stack<HistoryEntry> _undo = new();
         private readonly Stack<HistoryEntry> _redo = new();
         private const int HistoryCap = 100;
+        private const int MaximumCopiesPerDestination = 10_000;
 
         public MainForm()
         {
@@ -709,6 +714,17 @@ namespace ManyCopy
             chkAutoClearSources = new CheckBox { Text = "Clear source files after copying", Left = 10, Top = 26, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
             chkAutoClearDest = new CheckBox { Text = "Clear destination folders after copying", Left = 10, Top = 215, AutoSize = true, Anchor = AnchorStyles.Top | AnchorStyles.Left };
 
+            chkEnableNaming = new CheckBox { Text = "Customize copied filenames", AutoSize = true };
+            tabNamingStrategy = new TabControl
+            {
+                Height = 28,
+                Width = 390,
+                SizeMode = TabSizeMode.Fixed,
+                ItemSize = new Size(190, 24)
+            };
+            tabNamingStrategy.TabPages.Add("Number destinations");
+            tabNamingStrategy.TabPages.Add("Create multiple copies");
+
             grpNaming = new GroupBox { Text = "File naming (optional)", Height = 128, Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom };
             var lblPrefix = new Label { Text = "Prefix", Left = 12, Top = 27, Width = 50 };
             cmbPrefixMode = new ComboBox { Left = 65, Top = 23, Width = 105, DropDownStyle = ComboBoxStyle.DropDownList };
@@ -720,11 +736,12 @@ namespace ManyCopy
             lblPrefixStart = new Label { Text = "Starts at", Left = 380, Top = 27, Width = 48 };
             nudPrefixStart = new NumericUpDown { Left = 430, Top = 23, Width = 55, Minimum = 0, Maximum = 9_999_999, Value = 1 };
             lblPrefixEnd = new Label { Text = "Ends at", Left = 492, Top = 27, Width = 45 };
-            lblPrefixEndValue = new Label { Text = "—", Left = 540, Top = 27, Width = 45 };
-            lblPrefixDigits = new Label { Text = "Digits", Left = 590, Top = 27, Width = 38 };
-            nudPrefixPad = new NumericUpDown { Left = 630, Top = 23, Width = 45, Minimum = 1, Maximum = 7, Value = 3 };
-            lblPrefixSeparator = new Label { Text = "Separator", Left = 685, Top = 27, Width = 58 };
-            cmbPrefixSep = new ComboBox { Left = 748, Top = 23, Width = 74, DropDownStyle = ComboBoxStyle.DropDownList };
+            lblPrefixEndValue = new Label { Text = "—", Left = 540, Top = 27, Width = 60 };
+            nudPrefixEnd = new NumericUpDown { Left = 540, Top = 23, Width = 60, Minimum = 0, Maximum = 9_999_999, Value = 20 };
+            lblPrefixDigits = new Label { Text = "Digits", Left = 610, Top = 27, Width = 38 };
+            nudPrefixPad = new NumericUpDown { Left = 650, Top = 23, Width = 45, Minimum = 1, Maximum = 7, Value = 3 };
+            lblPrefixSeparator = new Label { Text = "Separator", Left = 705, Top = 27, Width = 58 };
+            cmbPrefixSep = new ComboBox { Left = 768, Top = 23, Width = 74, DropDownStyle = ComboBoxStyle.DropDownList };
             cmbPrefixSep.Items.AddRange(new object[] { "(none)", "-", "_" });
 
             var lblSuffix = new Label { Text = "Suffix", Left = 12, Top = 59, Width = 50 };
@@ -737,11 +754,12 @@ namespace ManyCopy
             lblSuffixStart = new Label { Text = "Starts at", Left = 380, Top = 59, Width = 48 };
             nudSuffixStart = new NumericUpDown { Left = 430, Top = 55, Width = 55, Minimum = 0, Maximum = 9_999_999, Value = 1 };
             lblSuffixEnd = new Label { Text = "Ends at", Left = 492, Top = 59, Width = 45 };
-            lblSuffixEndValue = new Label { Text = "—", Left = 540, Top = 59, Width = 45 };
-            lblSuffixDigits = new Label { Text = "Digits", Left = 590, Top = 59, Width = 38 };
-            nudSuffixPad = new NumericUpDown { Left = 630, Top = 55, Width = 45, Minimum = 1, Maximum = 7, Value = 3 };
-            lblSuffixSeparator = new Label { Text = "Separator", Left = 685, Top = 59, Width = 58 };
-            cmbSuffixSep = new ComboBox { Left = 748, Top = 55, Width = 74, DropDownStyle = ComboBoxStyle.DropDownList };
+            lblSuffixEndValue = new Label { Text = "—", Left = 540, Top = 59, Width = 60 };
+            nudSuffixEnd = new NumericUpDown { Left = 540, Top = 55, Width = 60, Minimum = 0, Maximum = 9_999_999, Value = 20 };
+            lblSuffixDigits = new Label { Text = "Digits", Left = 610, Top = 59, Width = 38 };
+            nudSuffixPad = new NumericUpDown { Left = 650, Top = 55, Width = 45, Minimum = 1, Maximum = 7, Value = 3 };
+            lblSuffixSeparator = new Label { Text = "Separator", Left = 705, Top = 59, Width = 58 };
+            cmbSuffixSep = new ComboBox { Left = 768, Top = 55, Width = 74, DropDownStyle = ComboBoxStyle.DropDownList };
             cmbSuffixSep.Items.AddRange(new object[] { "(none)", "-", "_" });
 
             var lblExample = new Label { Text = "Example:", Left = 12, Top = 94, Width = 55 };
@@ -750,9 +768,9 @@ namespace ManyCopy
             grpNaming.Controls.AddRange(new Control[]
             {
                 lblPrefix, cmbPrefixMode, lblPrefixText, txtPrefix, txtPrefixBase,
-                lblPrefixStart, nudPrefixStart, lblPrefixEnd, lblPrefixEndValue, lblPrefixDigits, nudPrefixPad, lblPrefixSeparator, cmbPrefixSep,
+                lblPrefixStart, nudPrefixStart, lblPrefixEnd, lblPrefixEndValue, nudPrefixEnd, lblPrefixDigits, nudPrefixPad, lblPrefixSeparator, cmbPrefixSep,
                 lblSuffix, cmbSuffixMode, lblSuffixText, txtSuffix, txtSuffixBase,
-                lblSuffixStart, nudSuffixStart, lblSuffixEnd, lblSuffixEndValue, lblSuffixDigits, nudSuffixPad, lblSuffixSeparator, cmbSuffixSep,
+                lblSuffixStart, nudSuffixStart, lblSuffixEnd, lblSuffixEndValue, nudSuffixEnd, lblSuffixDigits, nudSuffixPad, lblSuffixSeparator, cmbSuffixSep,
                 lblExample, lblNamePreview
             });
 
@@ -762,6 +780,8 @@ namespace ManyCopy
             srcTip.SetToolTip(nudSuffixPad, "How many digits to show. For example, 3 displays 001.");
             srcTip.SetToolTip(lblPrefixEndValue, "Calculated from the starting number and the number of destination folders.");
             srcTip.SetToolTip(lblSuffixEndValue, "Calculated from the starting number and the number of destination folders.");
+            srcTip.SetToolTip(nudPrefixEnd, "The final number to create in each destination folder.");
+            srcTip.SetToolTip(nudSuffixEnd, "The final number to create in each destination folder.");
 
             cmbPrefixMode.SelectedIndexChanged += (_, __) => { UpdateNamingControls(); UpdateFilenamePreview(); };
             cmbSuffixMode.SelectedIndexChanged += (_, __) => { UpdateNamingControls(); UpdateFilenamePreview(); };
@@ -771,8 +791,10 @@ namespace ManyCopy
             txtSuffixBase.TextChanged += (_, __) => UpdateFilenamePreview();
             nudPrefixStart.ValueChanged += (_, __) => UpdateFilenamePreview();
             nudPrefixPad.ValueChanged += (_, __) => UpdateFilenamePreview();
+            nudPrefixEnd.ValueChanged += (_, __) => UpdateFilenamePreview();
             nudSuffixStart.ValueChanged += (_, __) => UpdateFilenamePreview();
             nudSuffixPad.ValueChanged += (_, __) => UpdateFilenamePreview();
+            nudSuffixEnd.ValueChanged += (_, __) => UpdateFilenamePreview();
             cmbPrefixSep.SelectedIndexChanged += (_, __) => UpdateFilenamePreview();
             cmbSuffixSep.SelectedIndexChanged += (_, __) => UpdateFilenamePreview();
 
@@ -780,6 +802,9 @@ namespace ManyCopy
             cmbSuffixSep.SelectedIndex = 0;
             cmbPrefixMode.SelectedIndex = 0;
             cmbSuffixMode.SelectedIndex = 0;
+            tabNamingStrategy.SelectedIndex = 0;
+            chkEnableNaming.CheckedChanged += (_, __) => { UpdateNamingControls(); LayoutWorkspace(); UpdateFilenamePreview(); };
+            tabNamingStrategy.SelectedIndexChanged += (_, __) => { UpdateNamingControls(); UpdateFilenamePreview(); };
             UpdateNamingControls();
 
             Controls.AddRange(new Control[]
@@ -787,6 +812,8 @@ namespace ManyCopy
                 chkOverwrite,
                 chkAutoClearDest,
                 chkAutoClearSources,
+                chkEnableNaming,
+                tabNamingStrategy,
                 grpNaming,
                 chkPreview
             });
@@ -832,6 +859,11 @@ namespace ManyCopy
 
         private void UpdateNamingControls()
         {
+            bool namingEnabled = chkEnableNaming.Checked;
+            bool multipleCopies = tabNamingStrategy.SelectedIndex == 1;
+            tabNamingStrategy.Visible = namingEnabled;
+            grpNaming.Visible = namingEnabled;
+
             bool prefixEnabled = cmbPrefixMode.SelectedIndex > 0;
             bool prefixNumbered = cmbPrefixMode.SelectedIndex == 2;
             SetVisibleAndEnabled(txtPrefix, prefixEnabled && !prefixNumbered);
@@ -840,7 +872,8 @@ namespace ManyCopy
             SetVisibleAndEnabled(lblPrefixStart, prefixNumbered);
             SetVisibleAndEnabled(nudPrefixStart, prefixNumbered);
             SetVisibleAndEnabled(lblPrefixEnd, prefixNumbered);
-            SetVisibleAndEnabled(lblPrefixEndValue, prefixNumbered);
+            SetVisibleAndEnabled(lblPrefixEndValue, prefixNumbered && !multipleCopies);
+            SetVisibleAndEnabled(nudPrefixEnd, prefixNumbered && multipleCopies);
             SetVisibleAndEnabled(lblPrefixDigits, prefixNumbered);
             SetVisibleAndEnabled(nudPrefixPad, prefixNumbered);
             SetVisibleAndEnabled(lblPrefixSeparator, prefixEnabled);
@@ -854,7 +887,8 @@ namespace ManyCopy
             SetVisibleAndEnabled(lblSuffixStart, suffixNumbered);
             SetVisibleAndEnabled(nudSuffixStart, suffixNumbered);
             SetVisibleAndEnabled(lblSuffixEnd, suffixNumbered);
-            SetVisibleAndEnabled(lblSuffixEndValue, suffixNumbered);
+            SetVisibleAndEnabled(lblSuffixEndValue, suffixNumbered && !multipleCopies);
+            SetVisibleAndEnabled(nudSuffixEnd, suffixNumbered && multipleCopies);
             SetVisibleAndEnabled(lblSuffixDigits, suffixNumbered);
             SetVisibleAndEnabled(nudSuffixPad, suffixNumbered);
             SetVisibleAndEnabled(lblSuffixSeparator, suffixEnabled);
@@ -862,10 +896,10 @@ namespace ManyCopy
 
             lblPrefixText.Text = prefixNumbered ? "Text (optional)" : "Text";
             lblSuffixText.Text = suffixNumbered ? "Text (optional)" : "Text";
-            lblPrefixSeparator.Left = prefixNumbered ? 685 : 485;
-            cmbPrefixSep.Left = prefixNumbered ? 748 : 548;
-            lblSuffixSeparator.Left = suffixNumbered ? 685 : 485;
-            cmbSuffixSep.Left = suffixNumbered ? 748 : 548;
+            lblPrefixSeparator.Left = prefixNumbered ? 705 : 485;
+            cmbPrefixSep.Left = prefixNumbered ? 768 : 548;
+            lblSuffixSeparator.Left = suffixNumbered ? 705 : 485;
+            cmbSuffixSep.Left = suffixNumbered ? 768 : 548;
         }
 
         private static void SetVisibleAndEnabled(Control control, bool value)
@@ -879,6 +913,15 @@ namespace ManyCopy
             if (lblNamePreview is null) return;
 
             UpdateNumberingEndLabels();
+
+            string sourceName = _sources.Count > 0
+                ? Path.GetFileName(_sources[0])
+                : "original-file.txt";
+            if (!chkEnableNaming.Checked)
+            {
+                lblNamePreview.Text = sourceName;
+                return;
+            }
 
             int prefixMode = cmbPrefixMode.SelectedIndex;
             int suffixMode = cmbSuffixMode.SelectedIndex;
@@ -897,16 +940,80 @@ namespace ManyCopy
                 return;
             }
 
-            string sourceName = _sources.Count > 0
-                ? Path.GetFileName(_sources[0])
-                : "original-file.txt";
-            string example = BuildTargetName(
+            string firstExample = BuildTargetName(
                 sourceName,
                 (int)nudPrefixStart.Value,
                 (int)nudSuffixStart.Value);
 
-            lblNamePreview.Text = example;
-            srcTip.SetToolTip(lblNamePreview, example);
+            if (tabNamingStrategy.SelectedIndex == 1)
+            {
+                if (!TryGetCopiesPerDestination(out int copyCount, out string validationError))
+                {
+                    lblNamePreview.Text = validationError;
+                    return;
+                }
+
+                string lastExample = BuildTargetName(
+                    sourceName,
+                    (int)nudPrefixStart.Value + copyCount - 1,
+                    (int)nudSuffixStart.Value + copyCount - 1);
+                lblNamePreview.Text = copyCount == 1
+                    ? $"{firstExample} (1 copy per destination)"
+                    : $"{firstExample}  →  {lastExample} ({copyCount} copies per destination)";
+            }
+            else
+            {
+                lblNamePreview.Text = firstExample;
+            }
+
+            srcTip.SetToolTip(lblNamePreview, lblNamePreview.Text);
+        }
+
+        private bool TryGetCopiesPerDestination(out int copyCount, out string validationError)
+        {
+            copyCount = 1;
+            validationError = string.Empty;
+            if (!chkEnableNaming.Checked || tabNamingStrategy.SelectedIndex == 0) return true;
+
+            int? prefixCount = null;
+            int? suffixCount = null;
+            if (cmbPrefixMode.SelectedIndex == 2)
+            {
+                if (nudPrefixEnd.Value < nudPrefixStart.Value)
+                {
+                    validationError = "Prefix end must be equal to or greater than its start.";
+                    return false;
+                }
+                prefixCount = (int)(nudPrefixEnd.Value - nudPrefixStart.Value + 1);
+            }
+            if (cmbSuffixMode.SelectedIndex == 2)
+            {
+                if (nudSuffixEnd.Value < nudSuffixStart.Value)
+                {
+                    validationError = "Suffix end must be equal to or greater than its start.";
+                    return false;
+                }
+                suffixCount = (int)(nudSuffixEnd.Value - nudSuffixStart.Value + 1);
+            }
+
+            if (prefixCount is null && suffixCount is null)
+            {
+                validationError = "Choose Numbered for Prefix or Suffix to create multiple copies.";
+                return false;
+            }
+            if (prefixCount is not null && suffixCount is not null && prefixCount != suffixCount)
+            {
+                validationError = "Prefix and suffix ranges must contain the same number of copies.";
+                return false;
+            }
+
+            copyCount = prefixCount ?? suffixCount ?? 1;
+            if (copyCount > MaximumCopiesPerDestination)
+            {
+                validationError = $"A maximum of {MaximumCopiesPerDestination:N0} copies can be created per destination.";
+                return false;
+            }
+            return true;
         }
 
         private void UpdateNumberingEndLabels()
@@ -933,6 +1040,8 @@ namespace ManyCopy
 
         private string BuildTargetName(string sourceFile, int prefixIndex, int suffixIndex)
         {
+            if (!chkEnableNaming.Checked) return Path.GetFileName(sourceFile);
+
             int prefixMode = cmbPrefixMode.SelectedIndex;
             int suffixMode = cmbSuffixMode.SelectedIndex;
             string suffix = suffixMode switch
@@ -1155,53 +1264,64 @@ namespace ManyCopy
             if (sources.Count == 0) { Log("ERROR: No source files selected."); return; }
             if (listDest.Items.Count == 0) { Log("ERROR: No destinations selected."); return; }
 
-            int prefixMode = cmbPrefixMode.SelectedIndex; // 0=None,1=Fixed,2=Numbered
-            int suffixMode = cmbSuffixMode.SelectedIndex; // 0=None,1=Fixed,2=Numbered
+            int prefixMode = cmbPrefixMode.SelectedIndex;
+            int suffixMode = cmbSuffixMode.SelectedIndex;
+            if (chkEnableNaming.Checked && prefixMode == 1 && string.IsNullOrWhiteSpace(txtPrefix.Text))
+            { Log("ERROR: Prefix text is empty."); return; }
+            if (chkEnableNaming.Checked && suffixMode == 1 && string.IsNullOrWhiteSpace(txtSuffix.Text))
+            { Log("ERROR: Suffix text is empty."); return; }
+            if (!TryGetCopiesPerDestination(out int copiesPerDestination, out string validationError))
+            { Log($"ERROR: {validationError}"); return; }
 
-            bool useFixed = (prefixMode == 1) && !string.IsNullOrWhiteSpace(txtPrefix.Text);
-            bool useRange = prefixMode == 2;
+            bool numberByDestination = chkEnableNaming.Checked && tabNamingStrategy.SelectedIndex == 0;
+            bool createMultipleCopies = chkEnableNaming.Checked && tabNamingStrategy.SelectedIndex == 1;
+            int destinationPrefixIndex = (int)nudPrefixStart.Value;
+            int destinationSuffixIndex = (int)nudSuffixStart.Value;
 
-            bool useSuffixFixed = (suffixMode == 1) && !string.IsNullOrWhiteSpace(txtSuffix.Text);
-            bool useSuffixRange = suffixMode == 2;
-
-            if (prefixMode == 1 && string.IsNullOrWhiteSpace(txtPrefix.Text)) { Log("ERROR: Fixed prefix enabled but empty."); return; }
-            if (suffixMode == 1 && string.IsNullOrWhiteSpace(txtSuffix.Text)) { Log("ERROR: Suffix enabled but empty."); return; }
-
-            int idxPrefix = (int)nudPrefixStart.Value;
-            int idxSuffix = (int)nudSuffixStart.Value;
-
-            var planned = new List<(string folder, string destFile, bool exists)>();
+            var planned = new List<(string? sourceFile, string folder, string destFile, bool exists, string? error)>();
             foreach (var obj in listDest.Items.Cast<object?>())
             {
                 var folder = obj as string;
                 if (string.IsNullOrWhiteSpace(folder) || !Directory.Exists(folder))
                 {
-                    planned.Add((folder ?? "<null>", "<invalid>", false));
+                    planned.Add((null, folder ?? "<null>", string.Empty, false, "folder missing"));
                     continue;
                 }
 
                 foreach (var srcFile in sources)
                 {
-                    string finalName = BuildTargetName(srcFile, idxPrefix, idxSuffix);
-                    var dest = Path.Combine(folder, finalName);
+                    int copiesForThisFile = createMultipleCopies ? copiesPerDestination : 1;
+                    for (int offset = 0; offset < copiesForThisFile; offset++)
+                    {
+                        int prefixIndex = createMultipleCopies
+                            ? (int)nudPrefixStart.Value + offset
+                            : destinationPrefixIndex;
+                        int suffixIndex = createMultipleCopies
+                            ? (int)nudSuffixStart.Value + offset
+                            : destinationSuffixIndex;
+                        string finalName = BuildTargetName(srcFile, prefixIndex, suffixIndex);
+                        string dest = Path.Combine(folder, finalName);
 
-                    if (!IsValidFileName(finalName))
-                        planned.Add((folder, "<invalid>", false));
-                    else
-                        planned.Add((folder, dest, File.Exists(dest)));
+                        if (!IsValidFileName(finalName))
+                            planned.Add((srcFile, folder, string.Empty, false, "invalid name or path"));
+                        else
+                            planned.Add((srcFile, folder, dest, File.Exists(dest), null));
+                    }
                 }
-                if (useRange) idxPrefix++; if (useSuffixRange) idxSuffix++;
+                if (numberByDestination && prefixMode == 2) destinationPrefixIndex++;
+                if (numberByDestination && suffixMode == 2) destinationSuffixIndex++;
             }
 
             if (chkPreview.Checked)
             {
                 int existing = planned.Count(p => p.exists);
                 int willOverwrite = chkOverwrite.Checked ? existing : 0;
-                int invalid = planned.Count(p => p.destFile == "<invalid>");
+                int invalid = planned.Count(p => p.error is not null);
                 Log($"[PREVIEW] Sources: {sources.Count}");
+                if (createMultipleCopies) Log($"[PREVIEW] Copies per source and destination: {copiesPerDestination}");
                 foreach (var p in planned)
                 {
-                    if (p.destFile == "<invalid>") Log($"[PREVIEW] Skipped -> {p.folder} (invalid name or path)");
+                    if (p.error is not null) Log($"[PREVIEW] Skipped -> {p.folder} ({p.error})");
                     else if (p.exists && chkOverwrite.Checked) Log($"[PREVIEW] {p.destFile}  [will overwrite]");
                     else if (p.exists) Log($"[PREVIEW] {p.destFile}  [exists - will skip]");
                     else Log($"[PREVIEW] {p.destFile}");
@@ -1217,62 +1337,55 @@ namespace ManyCopy
             };
 
             int copied = 0, failed = 0, skipped = 0, backedUp = 0;
-            idxPrefix = (int)nudPrefixStart.Value;
-            idxSuffix = (int)nudSuffixStart.Value;
             var sourceHashes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-            foreach (var obj in listDest.Items.Cast<object?>())
+            foreach (var planItem in planned)
             {
-                var folder = obj as string;
-                if (string.IsNullOrWhiteSpace(folder) || !Directory.Exists(folder))
-                { Log($"Skipped -> {folder} (folder missing)"); skipped++; continue; }
-
-                foreach (var srcFile in sources)
+                if (planItem.error is not null || planItem.sourceFile is null)
                 {
-                    string finalName2 = BuildTargetName(srcFile, idxPrefix, idxSuffix);
-                    var destPath = Path.Combine(folder, finalName2);
-
-                    try
-                    {
-                        if (!sourceHashes.TryGetValue(srcFile, out string? sourceHash))
-                        {
-                            sourceHash = SafeFileCopy.ComputeSha256(srcFile);
-                            sourceHashes.Add(srcFile, sourceHash);
-                        }
-
-                        var result = SafeFileCopy.Execute(
-                            srcFile,
-                            destPath,
-                            chkOverwrite.Checked,
-                            knownSourceSha256: sourceHash);
-                        if (result.Disposition == CopyDisposition.SkippedIdentical)
-                        {
-                            Log($"Skipped (identical) -> {folder}");
-                            skipped++;
-                        }
-                        else if (result.Disposition == CopyDisposition.SkippedExisting)
-                        {
-                            Log($"Skipped -> {folder} (exists, overwrite off)");
-                            skipped++;
-                        }
-                        else
-                        {
-                            var receipt = result.Receipt
-                                ?? throw new IOException("The copy completed without an undo receipt.");
-                            entry.Ops.Add(receipt);
-                            if (receipt.ReplacedExisting) backedUp++;
-                            Log($"Copied -> {folder}: {Path.GetFileName(destPath)}");
-                            copied++;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Log($"FAILED -> {folder}: {ex.Message}");
-                        failed++;
-                    }
+                    Log($"Skipped -> {planItem.folder} ({planItem.error ?? "invalid source"})");
+                    skipped++;
+                    continue;
                 }
 
-                if (useRange) idxPrefix++; if (useSuffixRange) idxSuffix++;
+                try
+                {
+                    if (!sourceHashes.TryGetValue(planItem.sourceFile, out string? sourceHash))
+                    {
+                        sourceHash = SafeFileCopy.ComputeSha256(planItem.sourceFile);
+                        sourceHashes.Add(planItem.sourceFile, sourceHash);
+                    }
+
+                    var result = SafeFileCopy.Execute(
+                        planItem.sourceFile,
+                        planItem.destFile,
+                        chkOverwrite.Checked,
+                        knownSourceSha256: sourceHash);
+                    if (result.Disposition == CopyDisposition.SkippedIdentical)
+                    {
+                        Log($"Skipped (identical) -> {planItem.folder}");
+                        skipped++;
+                    }
+                    else if (result.Disposition == CopyDisposition.SkippedExisting)
+                    {
+                        Log($"Skipped -> {planItem.folder} (exists, overwrite off)");
+                        skipped++;
+                    }
+                    else
+                    {
+                        var receipt = result.Receipt
+                            ?? throw new IOException("The copy completed without an undo receipt.");
+                        entry.Ops.Add(receipt);
+                        if (receipt.ReplacedExisting) backedUp++;
+                        Log($"Copied -> {planItem.folder}: {Path.GetFileName(planItem.destFile)}");
+                        copied++;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log($"FAILED -> {planItem.folder}: {ex.Message}");
+                    failed++;
+                }
             }
 
             if (entry.Ops.Count > 0) { PushUndo(entry); _redo.Clear(); }
@@ -1407,7 +1520,9 @@ namespace ManyCopy
             int clientWidth = ClientSize.Width;
             int clientHeight = ClientSize.Height;
 
-            int namingTop = Math.Max(listDest.Top + 125, clientHeight - 330);
+            bool namingExpanded = chkEnableNaming.Checked;
+            int reservedHeight = namingExpanded ? 385 : 230;
+            int namingTop = Math.Max(listDest.Top + 125, clientHeight - reservedHeight);
             listDest.Width = Math.Max(250, clientWidth - buttonColumnWidth - (margin * 2));
             listDest.Height = Math.Max(110, namingTop - listDest.Top - margin);
 
@@ -1416,10 +1531,20 @@ namespace ManyCopy
             btnRemoveSel.Left = buttonLeft;
             btnClear.Left = buttonLeft;
 
-            grpNaming.SetBounds(margin, namingTop, Math.Max(820, clientWidth - (margin * 2)), 128);
+            chkEnableNaming.SetBounds(margin, namingTop, chkEnableNaming.PreferredSize.Width, chkEnableNaming.PreferredSize.Height);
+            int actionTop;
+            if (namingExpanded)
+            {
+                tabNamingStrategy.SetBounds(margin, chkEnableNaming.Bottom + 4, 390, 28);
+                grpNaming.SetBounds(margin, tabNamingStrategy.Bottom + 4, Math.Max(850, clientWidth - (margin * 2)), 128);
+                actionTop = grpNaming.Bottom + 8;
+            }
+            else
+            {
+                actionTop = chkEnableNaming.Bottom + 8;
+            }
             lblNamePreview.Width = Math.Max(250, grpNaming.ClientSize.Width - 82);
 
-            int actionTop = grpNaming.Bottom + 8;
             chkOverwrite.SetBounds(margin, actionTop + 8, chkOverwrite.PreferredSize.Width, chkOverwrite.PreferredSize.Height);
             chkPreview.SetBounds(220, actionTop + 8, chkPreview.PreferredSize.Width, chkPreview.PreferredSize.Height);
 

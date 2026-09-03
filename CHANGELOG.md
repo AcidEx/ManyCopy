@@ -13,6 +13,8 @@ and uses [Semantic Versioning](https://semver.org/).
 - Made the destination list, naming controls, action row, and log resize together more predictably.
 - Reused the same filename-building path for the live example, preview mode, and actual copies.
 - Allowed numbered prefixes and suffixes without extra text, and showed the calculated ending number from the destination count.
+- Made filename customization collapsible and added separate strategies for numbering destinations or creating a Start-to-End range of copies in every destination.
+- Built preview and execution from one shared copy plan so both modes target exactly the same filenames.
 
 ## [1.1.9] - 2026-09-03
 
