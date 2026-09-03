@@ -86,5 +86,38 @@ namespace ManyCopy.Tests
             // prefix: job-005-, then base name, then _rev
             Assert.Equal("job-005-doc_rev.txt", result);
         }
+
+        [Fact]
+        public void BuildTargetName_AllowsNumberOnlyPrefix()
+        {
+            string result = NamingHelpers.BuildTargetName(
+                baseName: "test.txt",
+                useFixed: false,
+                fixedPrefix: null,
+                useRange: true,
+                rangeBase: string.Empty,
+                index: 1,
+                useSuffix: false,
+                suffix: null,
+                prefixPadWidth: 3);
+
+            Assert.Equal("001test.txt", result);
+        }
+
+        [Fact]
+        public void BuildTargetName_AllowsNumberOnlySuffix()
+        {
+            string result = NamingHelpers.BuildTargetName(
+                baseName: "test.txt",
+                useFixed: false,
+                fixedPrefix: null,
+                useRange: false,
+                rangeBase: null,
+                index: 0,
+                useSuffix: true,
+                suffix: NamingHelpers.FormatRangeNumber(1, 3));
+
+            Assert.Equal("test001.txt", result);
+        }
     }
 }
